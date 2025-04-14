@@ -1,0 +1,80 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build outputs
+dist/
+resources/
+.astro/
+.output/
+_site/
+.docfx/
+
+# Alt:V server files
+altv-server*
+update.json
+modules/
+data/
+cache/
+crashdumps/
+screenshots/
+server.toml
+
+# Development
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing
+coverage/
+
+# Temporary files
+.tmp/
+.temp/
+.cache/
+
+# Framework specific
+.astro
+altv-server
+altv-crash-handler
+altv-server.exe
+altv-crash-handler.exe
+altv-client
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.vercel
+.netlify
+
+# Yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+.server-crashes-cache
