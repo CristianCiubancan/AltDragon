@@ -1,101 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <!-- Remove viewport meta to prevent resizing -->
     <title>Example UI</title>
     <style>
-        html, body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-            color: white;
-            background-color: transparent;
-        }
-        
-        .container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            width: 300px; /* Fixed width */
-            height: auto; /* Fixed content height */
-        }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+        color: white;
+        background-color: transparent;
+      }
 
-        .title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
+      .container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: rgba(0, 0, 0, 0.7);
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        width: 300px; /* Fixed width */
+        height: auto; /* Fixed content height */
+      }
 
-        .content {
-            font-size: 14px;
-        }
+      .title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
 
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            margin-top: 10px;
-            border-radius: 3px;
-            cursor: pointer;
-        }
+      .content {
+        font-size: 14px;
+      }
 
-        button:hover {
-            background-color: #45a049;
-        }
+      button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        margin-top: 10px;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="title">Example UI</div>
-        <div class="content">
-            <p>Welcome to the example resource!</p>
-            <p id="player-info">Loading player info...</p>
-        </div>
-        <button id="close-btn">Close</button>
+      <div class="title">Example UI</div>
+      <div class="content">
+        <p>Welcome to the example resource!</p>
+        <p id="player-info">Loading player info...</p>
+      </div>
+      <button id="close-btn">Close</button>
     </div>
 
     <script>
-        // Suppress the ResizeObserver loop error
-        window.addEventListener('error', function(e) {
-            if (e && e.message && e.message.includes('ResizeObserver')) {
-                e.stopImmediatePropagation();
-                return true;
-            }
-        }, true);
-        
-        // Handle communication with the game client
-        if ('alt' in window) {
-            // Listen for messages from the game client
-            alt.on('updatePlayerInfo', (playerName) => {
-                document.getElementById('player-info').textContent = `Player: ${playerName}`;
-            });
+      // Suppress the ResizeObserver loop error
+      window.addEventListener(
+        'error',
+        function (e) {
+          if (e && e.message && e.message.includes('ResizeObserver')) {
+            console.warn('ResizeObserver error suppressed:', e.message);
+            e.stopImmediatePropagation();
+            return true;
+          }
+        },
+        true
+      );
 
-            // Set up button click handler
-            document.getElementById('close-btn').addEventListener('click', () => {
-                alt.emit('closeUI');
-            });
-            
-            // Listen for ping event to test connection
-            alt.on('ping', () => {
-                alt.emit('pong');
-                console.log('Ping received, responded with pong');
-            });
-            
-            // Tell the client we're ready
-            alt.emit('uiReady');
-            console.log('UI ready event emitted');
-        } else {
-            console.error('alt not found in window - UI will not function correctly');
+      // Additional handler for unhandled promise rejections
+      window.addEventListener('unhandledrejection', function (e) {
+        if (
+          e &&
+          e.reason &&
+          e.reason.message &&
+          e.reason.message.includes('ResizeObserver')
+        ) {
+          console.warn(
+            'ResizeObserver promise error suppressed:',
+            e.reason.message
+          );
+          e.preventDefault();
+          e.stopPropagation();
+          return true;
         }
+      });
+
+      // Handle communication with the game client
+      if ('alt' in window) {
+        // Listen for messages from the game client
+        alt.on('updatePlayerInfo', (playerName) => {
+          document.getElementById(
+            'player-info'
+          ).textContent = `Player: ${playerName}`;
+        });
+
+        // Set up button click handler
+        document.getElementById('close-btn').addEventListener('click', () => {
+          alt.emit('closeUI');
+        });
+
+        // Listen for ping event to test connection
+        alt.on('ping', () => {
+          alt.emit('pong');
+          console.log('Ping received, responded with pong');
+        });
+
+        // Tell the client we're ready
+        alt.emit('uiReady');
+        console.log('UI ready event emitted');
+      } else {
+        console.error(
+          'alt not found in window - UI will not function correctly'
+        );
+      }
     </script>
-</body>
+  </body>
 </html>

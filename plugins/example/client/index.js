@@ -8,6 +8,18 @@ const MAX_ATTEMPTS = 3;
 
 alt.log('Example client-side resource started.');
 
+// Global handler for WebView errors
+alt.on('webview:error', (_, error) => {
+  // Check if it's a ResizeObserver error and suppress it
+  if (error && error.includes && error.includes('ResizeObserver')) {
+    alt.log('Suppressed WebView ResizeObserver error');
+    return;
+  }
+
+  // Log other errors
+  alt.logError(`WebView error: ${error}`);
+});
+
 // Alternative ways to load the UI, in case one fails
 const UI_PATHS = [
   'http://resource/client/html/index.html',
@@ -83,6 +95,9 @@ function tryCreateWebView() {
       if (localPlayer) {
         webview.emit('updatePlayerInfo', localPlayer.name);
       }
+
+      // Inject additional error handling for ResizeObserver
+      injectResizeObserverErrorHandler();
     });
 
     // Listen for pong response
@@ -193,7 +208,7 @@ alt.onServer('example:giveWeapons', () => {
       native.setPlayerCanLeaveParachuteSmokeTrail(player.scriptID, true);
 
       // Set player health and armor to max
-      native.setEntityHealth(player.scriptID, 200, 0);
+      native.setEntityHealth(player.scriptID, 200, 0, 0); // Added missing parameters
       native.setPedArmour(player.scriptID, 100);
 
       // Notify player
@@ -223,7 +238,7 @@ alt.on('keyup', (key) => {
       const player = alt.Player.local;
       if (player) {
         // Heal player
-        native.setEntityHealth(player.scriptID, 200, 0);
+        native.setEntityHealth(player.scriptID, 200, 0, 0); // Added missing parameters
         native.setPedArmour(player.scriptID, 100);
 
         // Small effect to show healing
@@ -236,6 +251,44 @@ alt.on('keyup', (key) => {
     }
   }
 });
+
+// Function to inject ResizeObserver error handling into the WebView
+function injectResizeObserverErrorHandler() {
+  if (!webview) return;
+
+  try {
+    // Execute script in the WebView to handle ResizeObserver errors
+    webview.execJS(`
+      // Create a debounced version of ResizeObserver to prevent loops
+      const OriginalResizeObserver = window.ResizeObserver;
+
+      if (OriginalResizeObserver) {
+        window.ResizeObserver = class DebouncedResizeObserver extends OriginalResizeObserver {
+          constructor(callback) {
+            // Create a debounced version of the callback
+            const debouncedCallback = (entries, observer) => {
+              window.requestAnimationFrame(() => {
+                if (Array.isArray(entries) && entries.length > 0) {
+                  callback(entries, observer);
+                }
+              });
+            };
+
+            super(debouncedCallback);
+          }
+        };
+
+        console.log('ResizeObserver patched to prevent loop errors');
+      }
+    `);
+
+    alt.log('Successfully injected ResizeObserver error handler');
+  } catch (error) {
+    alt.logError(
+      `Failed to inject ResizeObserver error handler: ${error.message}`
+    );
+  }
+}
 
 // Add F4 key to teleport to different locations
 alt.on('keyup', (key) => {
