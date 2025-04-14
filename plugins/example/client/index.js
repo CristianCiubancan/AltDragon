@@ -23,11 +23,6 @@ alt.on('keyup', (key) => {
   }
 });
 
-// Register a command handler for testing
-alt.registerCmd('ui', () => {
-  toggleUI();
-});
-
 function toggleUI() {
   if (uiVisible) {
     closeUI();

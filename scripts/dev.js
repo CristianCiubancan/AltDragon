@@ -14,33 +14,48 @@ const serverTomlPath = path.join(rootDir, 'server.toml');
 
 // Function to delete a directory recursively
 function deleteDirectory(dirPath) {
-  if (fs.existsSync(dirPath)) {
-    fs.rmSync(dirPath, { recursive: true, force: true });
-    console.log(`Deleted directory: ${dirPath}`);
+  try {
+    if (fs.existsSync(dirPath)) {
+      fs.rmSync(dirPath, { recursive: true, force: true });
+      console.log(`Deleted directory: ${dirPath}`);
+    }
+  } catch (error) {
+    console.error(`Error deleting directory ${dirPath}:`, error.message);
+    // Continue execution despite errors
   }
 }
 
 // Function to copy a directory recursively
 function copyDirectory(source, destination) {
-  // Create the destination directory if it doesn't exist
-  if (!fs.existsSync(destination)) {
-    fs.mkdirSync(destination, { recursive: true });
-  }
-
-  // Get all files and directories in the source directory
-  const entries = fs.readdirSync(source, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const sourcePath = path.join(source, entry.name);
-    const destPath = path.join(destination, entry.name);
-
-    if (entry.isDirectory()) {
-      // Recursively copy subdirectories
-      copyDirectory(sourcePath, destPath);
-    } else {
-      // Copy files
-      fs.copyFileSync(sourcePath, destPath);
+  try {
+    // Create the destination directory if it doesn't exist
+    if (!fs.existsSync(destination)) {
+      fs.mkdirSync(destination, { recursive: true });
     }
+
+    // Get all files and directories in the source directory
+    const entries = fs.readdirSync(source, { withFileTypes: true });
+
+    for (const entry of entries) {
+      try {
+        const sourcePath = path.join(source, entry.name);
+        const destPath = path.join(destination, entry.name);
+
+        if (entry.isDirectory()) {
+          // Recursively copy subdirectories
+          copyDirectory(sourcePath, destPath);
+        } else {
+          // Copy files
+          fs.copyFileSync(sourcePath, destPath);
+        }
+      } catch (err) {
+        console.error(`Error copying ${entry.name}:`, err.message);
+        // Continue with other files despite errors
+      }
+    }
+  } catch (error) {
+    console.error(`Error in copyDirectory for ${source} to ${destination}:`, error.message);
+    // Continue execution despite errors
   }
 }
 

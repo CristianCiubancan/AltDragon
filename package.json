@@ -6,9 +6,9 @@
   "scripts": {
     "binaries": "altv-pkg",
     "postinstall": "pnpm binaries",
-    "deploy-plugins": "node scripts/dev.js",
+    "deploy-plugins": "node scripts/dev.js || true",
     "dev": "node scripts/killproces.js && pnpm deploy-plugins && altv-server.exe",
-    "dev:linux": "node scripts/killproces.js && pnpm deploy-plugins && ./altv-server"
+    "dev:linux": "node scripts/dev.js && echo $? && ./altv-server"
   },
   "keywords": [],
   "author": "",
@@ -31,8 +31,5 @@
     "node-cron": "^3.0.3",
     "typescript": "^5.5.4",
     "vite": "^5.4.3"
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-win32-x64-msvc": "4.40.0"
   }
 }
