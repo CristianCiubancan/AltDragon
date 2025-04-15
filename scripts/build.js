@@ -321,12 +321,18 @@ function compileTypeScript(srcGlob, outDir) {
         platform: file.includes('client' + path.sep) ? 'browser' : 'node',
         target: 'es2020',
         format: 'esm',
-        bundle: false,
+        bundle: true, // Changed to true to support external
         sourcemap: true,
         // Define globalThis for browser platform to ensure compatibility
         define: file.includes('client' + path.sep)
           ? { 'window': 'globalThis' }
           : {},
+        // Mark AltV modules as external
+        external: file.includes('client' + path.sep)
+          ? ['alt-client', 'alt-shared', 'natives']
+          : file.includes('server' + path.sep)
+          ? ['alt-server', 'alt-shared', 'natives']
+          : ['alt-shared'],
       });
 
       if (result.errors && result.errors.length > 0) {

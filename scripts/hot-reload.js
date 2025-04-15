@@ -135,13 +135,17 @@ function getResourceNameFromPath(filePath) {
   // This will depend on your project structure
   // For example: src/plugins/example/server/index.ts -> example
 
-  const match = filePath.match(/src\/plugins\/([^\/]+)/);
+  // Normalize path separators to forward slashes for consistent matching
+  const normalizedPath = filePath.replace(/\\/g, '/');
+
+  // Match both patterns: src/plugins/name and src\plugins\name
+  const match = normalizedPath.match(/src\/plugins\/([^\/]+)/);
   if (match && match[1]) {
     return match[1];
   }
 
   // Check if it's the core resource
-  if (filePath.includes('src/core/')) {
+  if (normalizedPath.includes('src/core/')) {
     return 'core';
   }
 
@@ -175,6 +179,7 @@ function buildCore() {
     bundle: true,
     sourcemap: true,
     outExtension: { '.js': '.js' },
+    external: ['alt-server', 'alt-shared', 'natives'], // Mark AltV modules as external
   });
 
   // Build client-side files
@@ -197,6 +202,7 @@ function buildCore() {
     bundle: true,
     sourcemap: true,
     outExtension: { '.js': '.js' },
+    external: ['alt-client', 'alt-shared', 'natives'], // Mark AltV modules as external
   });
 
   // Copy shared directory if it exists
@@ -223,6 +229,7 @@ function buildCore() {
       bundle: true,
       sourcemap: true,
       outExtension: { '.js': '.js' },
+      external: ['alt-shared'], // Mark AltV modules as external
     });
   }
 
@@ -278,6 +285,7 @@ function buildPlugin(pluginName) {
       bundle: true,
       sourcemap: true,
       outExtension: { '.js': '.js' },
+      external: ['alt-server', 'alt-shared', 'natives'], // Mark AltV modules as external
     });
   }
 
@@ -303,6 +311,7 @@ function buildPlugin(pluginName) {
       bundle: true,
       sourcemap: true,
       outExtension: { '.js': '.js' },
+      external: ['alt-client', 'alt-shared', 'natives'], // Mark AltV modules as external
     });
 
     // Copy HTML, CSS, and other assets
@@ -341,19 +350,23 @@ function buildPlugin(pluginName) {
     );
 
     // Use esbuild to compile shared code
-    esbuild.buildSync({
-      entryPoints:
-        sharedFiles.length > 0
-          ? sharedFiles
-          : [path.join(sharedSrcDir, 'index.ts')],
-      outdir: sharedDir,
-      platform: 'neutral',
-      target: 'es2020',
-      format: 'esm',
-      bundle: true,
-      sourcemap: true,
-      outExtension: { '.js': '.js' },
-    });
+    if (sharedFiles.length > 0) {
+      esbuild.buildSync({
+        entryPoints: sharedFiles,
+        outdir: sharedDir,
+        platform: 'neutral',
+        target: 'es2020',
+        format: 'esm',
+        bundle: true,
+        sourcemap: true,
+        outExtension: { '.js': '.js' },
+        external: ['alt-shared'], // Mark AltV modules as external
+      });
+    } else {
+      console.log(
+        `No TypeScript files found in shared directory, skipping build`
+      );
+    }
   }
 
   // We don't need to copy resource.toml anymore as plugins are part of the core resource

@@ -73,13 +73,17 @@ function getResourceNameFromPath(filePath: string): string | null {
   // This will depend on your project structure
   // For example: src/plugins/example/server/index.ts -> example
 
-  const match = filePath.match(/src\/plugins\/([^\/]+)/);
+  // Normalize path separators to forward slashes for consistent matching
+  const normalizedPath = filePath.replace(/\\/g, '/');
+
+  // Match both patterns: src/plugins/name and src\plugins\name
+  const match = normalizedPath.match(/src\/plugins\/([^\/]+)/);
   if (match && match[1]) {
     return match[1];
   }
 
   // Check if it's the core resource
-  if (filePath.includes('src/core/')) {
+  if (normalizedPath.includes('src/core/')) {
     return 'core';
   }
 

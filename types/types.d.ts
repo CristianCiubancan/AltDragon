@@ -1,24 +1,17 @@
-// Add global alt object for alt:V
-declare const alt: {
-  on(eventName: string, listener: (...args: any[]) => void): void;
-  // Add more methods as needed
-};
+// This file contains additional type definitions to augment the official AltV types
+// Most types should come from @altv/types-* packages
 
-// Also define module types if you need to import them
-declare module 'alt-client' {
-  export function on(eventName: string, listener: (...args: any[]) => void): void;
-  // Add more types as needed
-}
+// Add any missing types or augmentations here if needed
 
-declare module 'alt-server' {
-  export function on(eventName: string, listener: (...args: any[]) => void): void;
-  // Add more types as needed
-}
+// Example of augmenting existing modules if needed:
+// declare module 'alt-client' {
+//   // Add missing types here
+// }
 
-declare module 'alt-shared' {
-  // Add types as needed
-}
+// declare module 'alt-server' {
+//   // Add missing types here
+// }
 
-declare module 'alt-natives' {
-  // Add types as needed
-}
+// declare module 'natives' {
+//   // Add missing types here
+// }

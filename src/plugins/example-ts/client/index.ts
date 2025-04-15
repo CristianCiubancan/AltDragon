@@ -24,7 +24,7 @@ function init(): void {
     return;
   }
 
-  core.log('Example plugin client-side initialized!');
+  core.log('Example plugin client-side initialized! (Hot reload test)');
 
   // Register event handlers
   registerEventHandlers();
@@ -332,3 +332,5 @@ function closeDebugUI(): void {
 
 // Initialize the plugin
 init();
+
+console.log('Client-side initialized! (Hot reload working!)');
