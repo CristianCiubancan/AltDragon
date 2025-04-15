@@ -232,9 +232,9 @@ function handleKeyUp(key: number): void {
   const core = (globalThis as any).core;
   if (!core) return;
 
-  // Shift+2 to toggle UI
-  if (key === 50 && alt.isKeyDown(16)) {
-    core.log('Shift+2 pressed, toggling UI');
+  // F12 to toggle UI
+  if (key === 123) {
+    core.log('F12 pressed, toggling UI');
     toggleUI();
   }
 }
@@ -264,7 +264,9 @@ function showUI(): void {
       'Attempting to create WebView at: http://resource/client/html/index.html'
     );
 
-    webview = new alt.WebView('http://resource/client/html/index.html');
+    webview = new alt.WebView(
+      'http://resource/example-ts/client/html/index.html'
+    );
 
     if (!webview) {
       core.log('WebView creation failed - webview is null', 'error');
@@ -356,7 +358,9 @@ function showHtmlUI(): void {
       'Attempting to create HTML WebView at: http://resource/client/html/ui.html'
     );
 
-    htmlWebview = new alt.WebView('http://resource/client/html/ui.html');
+    htmlWebview = new alt.WebView(
+      'http://resource/example-html/client/html/ui.html'
+    );
 
     if (!htmlWebview) {
       core.log('HTML WebView creation failed - webview is null', 'error');

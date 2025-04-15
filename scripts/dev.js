@@ -1,191 +1,201 @@
 /**
- * Development script for the AltV project
- * Builds and starts the AltV server
- * Handles plugin registration and resource.toml management
+ * Improved development script for the AltV project
+ * Provides a better development experience with hot reloading
+ * Cross-platform compatible for both Windows and Linux
  */
 
-const { spawn } = require('child_process');
-const { build } = require('./build');
-const fs = require('fs-extra');
+const { spawn, execSync } = require('child_process');
 const path = require('path');
+const fs = require('fs-extra');
 const os = require('os');
 
 // Configuration
-const config = {
-  // Source directories
-  srcDir: path.join(__dirname, '..', 'src'),
-  coreDir: path.join(__dirname, '..', 'src', 'core'),
-  pluginsDir: path.join(__dirname, '..', 'src', 'plugins'),
+const isWindows = process.platform === 'win32';
+const killCommand = isWindows
+  ? 'taskkill /F /IM altv-server.exe'
+  : 'pkill -f altv-server || true';
 
-  // Output directories
-  resourcesDir: path.join(__dirname, '..', 'resources'),
-  mainDir: path.join(__dirname, '..', 'resources', 'main'),
-  outputCoreDir: path.join(__dirname, '..', 'resources', 'main', 'core'),
-  outputPluginsDir: path.join(__dirname, '..', 'resources', 'main', 'plugins'),
-};
+/**
+ * Kill any existing AltV processes
+ */
+function killExistingProcesses() {
+  try {
+    console.log('Killing any existing AltV processes...');
+    execSync(killCommand, { stdio: 'ignore' });
+    console.log('Existing processes killed successfully.');
+  } catch (error) {
+    // It's okay if there are no processes to kill
+    console.log('No existing AltV processes found.');
+  }
+}
 
 /**
  * Start the development environment
+ * @param {boolean} hotReload Whether to use hot reloading
  */
-function startDev() {
+function startDev(hotReload = true) {
   console.log('Starting development environment...');
   console.log(`Platform: ${process.platform} (${os.type()} ${os.release()})`);
+  console.log(`Hot reload: ${hotReload ? 'enabled' : 'disabled'}`);
 
-  // Build the project
-  const buildResult = build(false);
-  if (!buildResult) {
-    console.error('Build failed, but continuing with server start...');
+  // Kill any existing AltV processes
+  killExistingProcesses();
+
+  // Start the appropriate development process
+  if (hotReload) {
+    startHotReloadDev();
+  } else {
+    startRegularDev();
   }
+}
 
-  // Print loaded plugins information
-  printLoadedPlugins();
+/**
+ * Start development with hot reloading
+ */
+function startHotReloadDev() {
+  console.log('Starting development with hot reloading...');
 
-  // Start the AltV server
-  const serverExe =
-    process.platform === 'win32' ? 'altv-server.exe' : './altv-server';
-  console.log(`Starting AltV server: ${serverExe}`);
-
-  const serverProcess = spawn(serverExe, [], {
+  // Start the hot reload process
+  const hotReloadProcess = spawn('node', ['scripts/hot-reload.js'], {
     stdio: 'inherit',
-    cwd: process.cwd(),
+    shell: true,
   });
 
-  // Handle server exit
-  serverProcess.on('exit', (code) => {
-    console.log(`Server exited with code ${code}`);
+  // Handle process exit
+  hotReloadProcess.on('exit', (code) => {
+    console.log(`Hot reload process exited with code ${code}`);
     process.exit(code);
   });
 
   // Handle process errors
-  serverProcess.on('error', (err) => {
-    console.error(`Failed to start server: ${err.message}`);
+  hotReloadProcess.on('error', (error) => {
+    console.error(`Hot reload process error: ${error.message}`);
     process.exit(1);
-  });
-
-  // Handle process exit
-  process.on('exit', () => {
-    if (!serverProcess.killed) {
-      console.log('Shutting down server...');
-      serverProcess.kill();
-    }
   });
 
   // Handle SIGINT (Ctrl+C)
   process.on('SIGINT', () => {
     console.log('Received SIGINT, shutting down...');
-    if (!serverProcess.killed) {
-      serverProcess.kill();
-    }
+    hotReloadProcess.kill();
     process.exit(0);
   });
-
-  console.log('Development environment started successfully!');
 }
 
 /**
- * Print information about loaded plugins
+ * Start development without hot reloading
  */
-function printLoadedPlugins() {
-  try {
-    const pluginsDir = path.join(config.outputCoreDir, 'plugins');
-    if (!fs.existsSync(pluginsDir)) {
-      console.log('No plugins directory found');
-      return;
+function startRegularDev() {
+  console.log('Starting development without hot reloading...');
+
+  // Build the project
+  const buildProcess = spawn('node', ['scripts/build.js'], {
+    stdio: 'inherit',
+    shell: true,
+  });
+
+  // Wait for build to complete
+  buildProcess.on('exit', (code) => {
+    if (code !== 0) {
+      console.error(`Build failed with code ${code}`);
+      process.exit(code);
     }
 
-    const pluginDirs = fs
-      .readdirSync(pluginsDir, { withFileTypes: true })
-      .filter((dirent) => dirent.isDirectory())
-      .map((dirent) => dirent.name);
+    console.log('Build completed successfully, starting server...');
 
-    if (pluginDirs.length === 0) {
-      console.log('No plugins found');
-      return;
-    }
+    // Start the AltV server
+    const serverExe = isWindows ? 'altv-server.exe' : './altv-server';
+    const serverProcess = spawn(serverExe, [], {
+      stdio: 'inherit',
+      cwd: process.cwd(),
+    });
 
-    console.log('\n=== Loaded Plugins ===');
+    // Handle server exit
+    serverProcess.on('exit', (code) => {
+      console.log(`Server exited with code ${code}`);
+      process.exit(code);
+    });
 
-    let totalClientFiles = 0;
-    let totalServerFiles = 0;
-    let totalSharedFiles = 0;
+    // Handle server errors
+    serverProcess.on('error', (err) => {
+      console.error(`Server error: ${err.message}`);
+      process.exit(1);
+    });
 
-    for (const pluginName of pluginDirs) {
-      const metadataPath = path.join(pluginsDir, pluginName, 'metadata.json');
-      if (fs.existsSync(metadataPath)) {
-        try {
-          const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-          const clientFiles = metadata.clientFiles?.length || 0;
-          totalClientFiles += clientFiles;
-
-          // Count server files
-          const serverDir = path.join(pluginsDir, pluginName, 'server');
-          const serverFiles = fs.existsSync(serverDir)
-            ? countFiles(serverDir)
-            : 0;
-          totalServerFiles += serverFiles;
-
-          // Count shared files
-          const sharedDir = path.join(pluginsDir, pluginName, 'shared');
-          const sharedFiles = fs.existsSync(sharedDir)
-            ? countFiles(sharedDir)
-            : 0;
-          totalSharedFiles += sharedFiles;
-
-          console.log(
-            `- ${metadata.name} (${metadata.id}) v${metadata.version}`
-          );
-          console.log(
-            `  Client: ${clientFiles} files, Server: ${serverFiles} files, Shared: ${sharedFiles} files`
-          );
-          if (metadata.description) {
-            console.log(`  Description: ${metadata.description}`);
-          }
-        } catch (error) {
-          console.error(
-            `Error reading metadata for ${pluginName}: ${error.message}`
-          );
-        }
-      } else {
-        console.log(`- ${pluginName} (No metadata found)`);
+    // Handle process exit
+    process.on('exit', () => {
+      if (!serverProcess.killed) {
+        console.log('Shutting down server...');
+        serverProcess.kill();
       }
-    }
+    });
 
-    console.log('\nTotal:');
-    console.log(`- ${pluginDirs.length} plugins`);
-    console.log(`- ${totalClientFiles} client file patterns`);
-    console.log(`- ${totalServerFiles} server files`);
-    console.log(`- ${totalSharedFiles} shared files`);
-    console.log('======================\n');
-  } catch (error) {
-    console.error(`Error printing loaded plugins: ${error.message}`);
-    if (error.stack) {
-      console.error(error.stack);
-    }
-  }
+    // Handle SIGINT (Ctrl+C)
+    process.on('SIGINT', () => {
+      console.log('Received SIGINT, shutting down...');
+      if (!serverProcess.killed) {
+        serverProcess.kill();
+      }
+      process.exit(0);
+    });
+  });
+
+  // Handle build errors
+  buildProcess.on('error', (error) => {
+    console.error(`Build process error: ${error.message}`);
+    process.exit(1);
+  });
 }
 
 /**
- * Count files in a directory recursively
- * @param {string} dir Directory to count files in
- * @returns {number} Number of files
+ * Deploy plugins to the resources directory
+ * This is useful for testing plugins without hot reloading
  */
-function countFiles(dir) {
-  let count = 0;
-  try {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        count += countFiles(fullPath);
-      } else {
-        count++;
-      }
+function deployPlugins() {
+  console.log('Deploying plugins...');
+
+  // Build the project
+  const buildProcess = spawn('node', ['scripts/build.js'], {
+    stdio: 'inherit',
+    shell: true,
+  });
+
+  // Wait for build to complete
+  buildProcess.on('exit', (code) => {
+    if (code !== 0) {
+      console.error(`Build failed with code ${code}`);
+      process.exit(code);
     }
-  } catch (error) {
-    console.error(`Error counting files in ${dir}: ${error.message}`);
-  }
-  return count;
+
+    console.log('Build completed successfully, plugins deployed!');
+  });
+
+  // Handle build errors
+  buildProcess.on('error', (error) => {
+    console.error(`Build process error: ${error.message}`);
+    process.exit(1);
+  });
 }
 
-// Start the development environment
-startDev();
+// Parse command line arguments
+const args = process.argv.slice(2);
+const command = args[0] || 'dev';
+
+// Execute the appropriate command
+switch (command) {
+  case 'dev':
+    startDev(true);
+    break;
+  case 'dev:no-hot':
+    startDev(false);
+    break;
+  case 'deploy-plugins':
+    deployPlugins();
+    break;
+  default:
+    console.error(`Unknown command: ${command}`);
+    console.log('Available commands:');
+    console.log('  dev - Start development with hot reloading');
+    console.log('  dev:no-hot - Start development without hot reloading');
+    console.log('  deploy-plugins - Deploy plugins to the resources directory');
+    process.exit(1);
+}

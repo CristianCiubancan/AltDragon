@@ -1,11 +1,14 @@
 /**
- * Build script for the AltV project
+ * Improved build script for the AltV project
  * Handles compilation of TypeScript code and copying of resources
+ * Cross-platform compatible for both Windows and Linux
  */
 
 const fs = require('fs-extra');
 const path = require('path');
 const { execSync } = require('child_process');
+const glob = require('glob');
+const esbuild = require('esbuild');
 
 // Configuration
 const config = {
@@ -66,24 +69,16 @@ function build(production = false) {
  */
 function ensureDirectories() {
   // Create resources directory if it doesn't exist
-  if (!fs.existsSync(config.resourcesDir)) {
-    fs.mkdirSync(config.resourcesDir);
-  }
+  fs.ensureDirSync(config.resourcesDir);
 
   // Create main directory if it doesn't exist
-  if (!fs.existsSync(config.mainDir)) {
-    fs.mkdirSync(config.mainDir);
-  }
+  fs.ensureDirSync(config.mainDir);
 
   // Create output core directory if it doesn't exist
-  if (!fs.existsSync(config.outputCoreDir)) {
-    fs.mkdirSync(config.outputCoreDir);
-  }
+  fs.ensureDirSync(config.outputCoreDir);
 
   // Create output plugins directory if it doesn't exist
-  if (!fs.existsSync(config.outputPluginsDir)) {
-    fs.mkdirSync(config.outputPluginsDir);
-  }
+  fs.ensureDirSync(config.outputPluginsDir);
 }
 
 /**
@@ -119,19 +114,25 @@ function buildCore() {
     // Compile server-side TypeScript
     compileTypeScript(
       path.join(config.coreDir, 'server', '**', '*.ts'),
-      serverDir
+      serverDir,
+      'server'
     );
 
     // Compile client-side TypeScript
     compileTypeScript(
       path.join(config.coreDir, 'client', '**', '*.ts'),
-      clientDir
+      clientDir,
+      'client'
     );
 
     // Compile shared TypeScript if it exists
     const sharedSrcDir = path.join(config.coreDir, 'shared');
     if (fs.existsSync(sharedSrcDir)) {
-      compileTypeScript(path.join(sharedSrcDir, '**', '*.ts'), sharedDir);
+      compileTypeScript(
+        path.join(sharedSrcDir, '**', '*.ts'),
+        sharedDir,
+        'shared'
+      );
     }
 
     // Check if resource.toml exists
@@ -323,10 +324,6 @@ function updateCoreResourceToml(clientFiles, serverFiles = []) {
         );
       }
 
-      // Log the updated content for debugging
-      console.log('Updated TOML content:');
-      console.log(newTomlContent);
-
       console.log(
         `Added ${serverFiles.length} server file patterns to resource.toml`
       );
@@ -394,7 +391,11 @@ function buildPlugin(pluginName) {
       serverFiles.push(`plugins/${pluginName}/server/*`);
 
       // Compile server-side TypeScript
-      compileTypeScript(path.join(serverSrcDir, '**', '*.ts'), serverDir);
+      compileTypeScript(
+        path.join(serverSrcDir, '**', '*.ts'),
+        serverDir,
+        'server'
+      );
 
       // Copy any JavaScript files
       copyFiles(path.join(serverSrcDir, '**', '*.js'), serverDir);
@@ -407,7 +408,11 @@ function buildPlugin(pluginName) {
       clientFiles.push(`plugins/${pluginName}/client/*`);
 
       // Compile client-side TypeScript
-      compileTypeScript(path.join(clientSrcDir, '**', '*.ts'), clientDir);
+      compileTypeScript(
+        path.join(clientSrcDir, '**', '*.ts'),
+        clientDir,
+        'client'
+      );
 
       // Copy any JavaScript files
       copyFiles(path.join(clientSrcDir, '**', '*.js'), clientDir);
@@ -443,7 +448,11 @@ function buildPlugin(pluginName) {
       clientFiles.push(`plugins/${pluginName}/shared/*`);
 
       // Compile shared TypeScript
-      compileTypeScript(path.join(sharedSrcDir, '**', '*.ts'), sharedDir);
+      compileTypeScript(
+        path.join(sharedSrcDir, '**', '*.ts'),
+        sharedDir,
+        'shared'
+      );
 
       // Copy any JavaScript files
       copyFiles(path.join(sharedSrcDir, '**', '*.js'), sharedDir);
@@ -515,15 +524,13 @@ function buildPlugin(pluginName) {
 }
 
 /**
- * Compile TypeScript files
+ * Compile TypeScript files using esbuild
  * @param {string} srcGlob The glob pattern for source files
  * @param {string} outDir The output directory
+ * @param {string} type The type of code ('server', 'client', or 'shared')
  */
-function compileTypeScript(srcGlob, outDir) {
+function compileTypeScript(srcGlob, outDir, type = 'server') {
   try {
-    // Use esbuild to compile TypeScript (more reliable cross-platform)
-    const esbuild = require('esbuild');
-
     // Normalize path separators for cross-platform compatibility
     const normalizedSrcGlob = srcGlob.replace(/[\\/]/g, path.sep);
 
@@ -575,26 +582,32 @@ function compileTypeScript(srcGlob, outDir) {
     // Ensure output directory exists
     fs.ensureDirSync(outDir);
 
+    // Determine platform and externals based on type
+    const platform = type === 'client' ? 'browser' : 'node';
+    let externals = [];
+
+    if (type === 'client') {
+      externals = ['alt-client', 'alt-shared', 'natives'];
+    } else if (type === 'server') {
+      externals = ['alt-server', 'alt-shared', 'natives'];
+    } else {
+      externals = ['alt-shared'];
+    }
+
     // Compile all files at once with esbuild
     const result = esbuild.buildSync({
       entryPoints: files,
       outdir: outDir,
-      platform: normalizedSrcGlob.includes('client') ? 'browser' : 'node',
+      platform: platform,
       target: 'es2020',
       format: 'esm',
       bundle: true,
       sourcemap: true,
       outExtension: { '.js': '.js' },
       // Define globalThis for browser platform to ensure compatibility
-      define: normalizedSrcGlob.includes('client')
-        ? { 'window': 'globalThis' }
-        : {},
+      define: type === 'client' ? { 'window': 'globalThis' } : {},
       // Mark AltV modules as external
-      external: normalizedSrcGlob.includes('client')
-        ? ['alt-client', 'alt-shared', 'natives']
-        : normalizedSrcGlob.includes('server')
-        ? ['alt-server', 'alt-shared', 'natives']
-        : ['alt-shared'],
+      external: externals,
       logLevel: 'warning',
     });
 
@@ -630,51 +643,17 @@ function copyFiles(srcGlob, outDir) {
     // Normalize path separators for cross-platform compatibility
     const normalizedSrcGlob = srcGlob.replace(/[\\/]/g, path.sep);
 
-    // Get the base directory and pattern from the glob
-    const parts = normalizedSrcGlob.split('**');
-    const baseDir = parts[0];
-    const pattern = parts.length > 1 ? parts[1].substring(1) : ''; // Remove leading path separator
-
-    // Check if the directory exists
-    if (!fs.existsSync(baseDir)) {
-      console.log(`Base directory not found: ${baseDir}`);
-      return;
-    }
-
-    // Find all matching files in the directory
-    const files = [];
-    const walkSync = (dir) => {
-      try {
-        if (!fs.existsSync(dir)) {
-          console.log(`Directory not found: ${dir}`);
-          return;
-        }
-
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-        for (const entry of entries) {
-          const fullPath = path.join(dir, entry.name);
-          if (entry.isDirectory()) {
-            walkSync(fullPath);
-          } else if (
-            pattern === '' ||
-            entry.name.match(pattern.replace(/\*\./g, '.*\\.'))
-          ) {
-            files.push(fullPath);
-          }
-        }
-      } catch (err) {
-        console.error(`Error walking directory ${dir}: ${err.message}`);
-      }
-    };
-
-    walkSync(baseDir);
+    // Use glob to find files (more reliable cross-platform)
+    const files = glob.sync(normalizedSrcGlob, { nodir: true });
 
     if (files.length === 0) {
-      console.log(`No files found in: ${baseDir} matching pattern: ${pattern}`);
+      console.log(`No files found matching: ${normalizedSrcGlob}`);
       return;
     }
 
-    console.log(`Found ${files.length} files to copy from ${baseDir}`);
+    console.log(
+      `Found ${files.length} files to copy from ${normalizedSrcGlob}`
+    );
 
     // Ensure output directory exists
     fs.ensureDirSync(outDir);
@@ -683,6 +662,10 @@ function copyFiles(srcGlob, outDir) {
     let copiedCount = 0;
     for (const file of files) {
       try {
+        // Get the base directory from the glob pattern
+        const parts = normalizedSrcGlob.split('**');
+        const baseDir = parts[0];
+
         const relativePath = path.relative(baseDir, file);
         const destPath = path.join(outDir, relativePath);
 

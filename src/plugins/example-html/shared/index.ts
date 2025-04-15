@@ -12,8 +12,7 @@ export const Events = {
 
 // UI configuration
 export const UIConfig = {
-  TOGGLE_KEY: 85, // 'U' key
-  TOGGLE_MODIFIER: 16, // Shift key
+  TOGGLE_KEY: 123, // F12 key
 };
 
 // Teleport locations

@@ -67,7 +67,7 @@ The hot reloading system:
 
 ### How It Works
 
-1. The `hot-reload-improved.js` script starts a file watcher and a reload server
+1. The `hot-reload.js` script starts a file watcher and a reload server
 2. When a file changes, it determines which resource needs to be reloaded
 3. It rebuilds the resource and sends a reload request to the server
 4. The server receives the request and reloads the resource
@@ -101,7 +101,7 @@ The build system is designed to work on both Windows and Linux:
 If you encounter port conflicts with the hot reload server:
 
 1. The system will automatically try to use a different port
-2. You can manually change the port in `scripts/hot-reload-improved.js`
+2. You can manually change the port in `scripts/hot-reload.js`
 
 ### Build Errors
 

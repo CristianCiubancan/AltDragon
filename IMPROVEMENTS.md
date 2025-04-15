@@ -5,17 +5,20 @@ This document outlines the improvements made to the build and development system
 ## Overview of Changes
 
 1. **Cross-Platform Compatibility**
+
    - Improved path handling for Windows and Linux
    - Used cross-platform file operations
    - Fixed process management for both platforms
 
 2. **Build System**
+
    - Enhanced TypeScript compilation with esbuild
    - Improved error handling and reporting
    - Added better support for HTML files
    - Optimized file copying and directory handling
 
 3. **Development Workflow**
+
    - Added proper hot-reloading
    - Fixed port conflict issues
    - Improved console output
@@ -30,9 +33,9 @@ This document outlines the improvements made to the build and development system
 
 The following new scripts have been added:
 
-- `scripts/build-improved.js` - Improved build script
-- `scripts/hot-reload-improved.js` - Improved hot reload script
-- `scripts/dev-improved.js` - Improved development script
+- `scripts/build.js` - Improved build script
+- `scripts/hot-reload.js` - Improved hot reload script
+- `scripts/dev.js` - Improved development script
 
 ## New Commands
 
@@ -52,6 +55,7 @@ An example plugin with HTML UI has been added to demonstrate the new system:
 - `src/plugins/example-html` - Example plugin with HTML UI
 
 This plugin demonstrates:
+
 - Server-side code
 - Client-side code
 - HTML UI
@@ -69,6 +73,7 @@ The following documentation has been added:
 ## Next Steps
 
 1. **Testing**
+
    - Test the new build system on both Windows and Linux
    - Test hot reloading with various plugins
    - Test HTML UI functionality

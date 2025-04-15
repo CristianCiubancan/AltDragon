@@ -10,7 +10,7 @@ const { spawn, execSync } = require('child_process');
 const net = require('net');
 const esbuild = require('esbuild');
 const chokidar = require('chokidar');
-const { build } = require('./build-improved');
+const { build } = require('./build');
 
 // Configuration
 const config = {
@@ -133,7 +133,7 @@ function startReloadServer() {
       console.log(
         `Reload server listening on tcp://0.0.0.0:${config.reloadPort}`
       );
-      
+
       // Update the reload port in the core resource
       updateReloadPort(config.reloadPort);
     });
@@ -157,16 +157,19 @@ function updateReloadPort(port) {
       'server',
       'external-reload.js'
     );
-    
+
     if (fs.existsSync(externalReloadPath)) {
       let content = fs.readFileSync(externalReloadPath, 'utf8');
-      
+
       // Replace the port in the file
-      content = content.replace(/RELOAD_PORT\s*=\s*\d+/, `RELOAD_PORT = ${port}`);
-      
+      content = content.replace(
+        /RELOAD_PORT\s*=\s*\d+/,
+        `RELOAD_PORT = ${port}`
+      );
+
       // Write the updated content
       fs.writeFileSync(externalReloadPath, content);
-      
+
       console.log(`Updated reload port in core resource to ${port}`);
     }
   } catch (error) {
@@ -181,7 +184,7 @@ function updateReloadPort(port) {
 function startFileWatcher() {
   try {
     console.log('Starting file watcher...');
-    
+
     // Create a watcher for the source directory
     const watcher = chokidar.watch(config.srcDir, {
       ignored: /(^|[\/\\])\../, // Ignore dotfiles
@@ -192,23 +195,23 @@ function startFileWatcher() {
         pollInterval: 100,
       },
     });
-    
+
     // Handle file changes
     watcher.on('all', (event, filePath) => {
       // Normalize path for cross-platform compatibility
       const normalizedPath = filePath.replace(/\\/g, '/');
-      
+
       console.log(`File ${event}: ${normalizedPath}`);
-      
+
       // Determine which resource needs to be reloaded
       const resourceName = getResourceForFile(normalizedPath);
-      
+
       if (resourceName) {
         console.log(`Resource for file: ${resourceName}`);
-        
+
         // Add to pending reloads
         pendingReloads.add(resourceName);
-        
+
         // Rebuild the resource
         if (resourceName === 'core') {
           build(false);
@@ -218,7 +221,7 @@ function startFileWatcher() {
           const { buildPlugin } = require('./build-improved');
           buildPlugin(pluginName);
         }
-        
+
         // Process reloads with debounce
         if (reloadTimer) {
           clearTimeout(reloadTimer);
@@ -228,7 +231,7 @@ function startFileWatcher() {
         console.log(`Could not determine resource for file: ${normalizedPath}`);
       }
     });
-    
+
     console.log('File watcher started successfully!');
   } catch (error) {
     console.error(`Error starting file watcher: ${error.message}`);
@@ -247,18 +250,18 @@ function getResourceForFile(filePath) {
   try {
     // Normalize path for cross-platform compatibility
     const normalizedPath = filePath.replace(/\\/g, '/');
-    
+
     // Check if it's a core file
     if (normalizedPath.includes('/src/core/')) {
       return 'core';
     }
-    
+
     // Check if it's a plugin file
     const pluginsMatch = normalizedPath.match(/\/src\/plugins\/([^\/]+)/);
     if (pluginsMatch && pluginsMatch[1]) {
       return pluginsMatch[1];
     }
-    
+
     return null;
   } catch (error) {
     console.error(`Error determining resource for file: ${error.message}`);
@@ -275,18 +278,18 @@ function processReloads() {
       console.log('No pending reloads to process');
       return;
     }
-    
+
     console.log(`Processing ${pendingReloads.size} pending reloads...`);
-    
+
     // Convert Set to Array
     const resources = Array.from(pendingReloads);
-    
+
     // Clear pending reloads
     pendingReloads.clear();
-    
+
     // Send reload request to the server
     sendReloadRequest(resources);
-    
+
     console.log('Reload request sent to server');
   } catch (error) {
     console.error(`Error processing reloads: ${error.message}`);
@@ -304,22 +307,22 @@ function processReloads() {
 function sendReloadRequest(resources) {
   try {
     console.log(`Sending reload request for: ${resources.join(', ')}`);
-    
+
     // Connect to the reload server
     const client = new net.Socket();
-    
+
     client.connect(config.reloadPort, '0.0.0.0', () => {
       console.log('Connected to reload server');
-      
+
       // Send the reload request
       const message = {
         type: 'reload',
         resources: resources,
       };
-      
+
       client.write(JSON.stringify(message));
     });
-    
+
     client.on('data', (data) => {
       try {
         const response = JSON.parse(data.toString());
@@ -330,13 +333,13 @@ function sendReloadRequest(resources) {
         client.end();
       }
     });
-    
+
     client.on('error', (err) => {
       console.error(`Reload client error: ${err.message}`);
       client.end();
       return false;
     });
-    
+
     return true;
   } catch (error) {
     console.error(`Error sending reload request: ${error.message}`);
@@ -353,28 +356,29 @@ function sendReloadRequest(resources) {
 function startServer() {
   try {
     console.log('Starting AltV server...');
-    
+
     // Determine the server executable based on platform
-    const serverExe = process.platform === 'win32' ? 'altv-server.exe' : './altv-server';
-    
+    const serverExe =
+      process.platform === 'win32' ? 'altv-server.exe' : './altv-server';
+
     // Start the server process
     serverProcess = spawn(serverExe, [], {
       stdio: 'inherit',
       cwd: process.cwd(),
     });
-    
+
     // Handle server exit
     serverProcess.on('exit', (code) => {
       console.log(`Server exited with code ${code}`);
       process.exit(code);
     });
-    
+
     // Handle server errors
     serverProcess.on('error', (err) => {
       console.error(`Server error: ${err.message}`);
       process.exit(1);
     });
-    
+
     // Handle process exit
     process.on('exit', () => {
       if (serverProcess && !serverProcess.killed) {
@@ -382,7 +386,7 @@ function startServer() {
         serverProcess.kill();
       }
     });
-    
+
     // Handle SIGINT (Ctrl+C)
     process.on('SIGINT', () => {
       console.log('Received SIGINT, shutting down...');
@@ -391,7 +395,7 @@ function startServer() {
       }
       process.exit(0);
     });
-    
+
     console.log('AltV server started successfully!');
   } catch (error) {
     console.error(`Error starting server: ${error.message}`);

@@ -124,7 +124,7 @@ function spawnPlayer(player: alt.Player): void {
 
           sendNotification(
             player,
-            `Welcome to the server, ${player.name}! Press Shift+2 to toggle the UI`
+            `Welcome to the server, ${player.name}! Press F12 to toggle the UI`
           );
           core.log(
             `Player ${player.name} spawned at Mount Chiliad (${spawnPos.x}, ${spawnPos.y}, ${spawnPos.z})`
