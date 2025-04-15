@@ -323,6 +323,10 @@ function compileTypeScript(srcGlob, outDir) {
         format: 'esm',
         bundle: false,
         sourcemap: true,
+        // Define globalThis for browser platform to ensure compatibility
+        define: file.includes('client' + path.sep)
+          ? { 'window': 'globalThis' }
+          : {},
       });
 
       if (result.errors && result.errors.length > 0) {

@@ -12,6 +12,15 @@ declare global {
         activationKey: number;
       };
     };
+    core?: CoreAPI;
+  }
+
+  // Define the core API interface
+  interface CoreAPI {
+    on: (eventName: string, handler: (...args: any[]) => void) => void;
+    emit: (eventName: string, ...args: any[]) => void;
+    log: (message: string, level?: 'info' | 'warn' | 'error') => void;
+    getVersion: () => string;
   }
 
   // Explicitly declare alt as a global variable
@@ -23,6 +32,9 @@ declare global {
       activationKey: number;
     };
   };
+
+  // Explicitly declare core as a global variable
+  const core: CoreAPI;
 
   interface KeyInfo {
     key: number;

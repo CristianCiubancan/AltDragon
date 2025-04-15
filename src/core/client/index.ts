@@ -16,15 +16,20 @@ const eventHandlers = new Map<string, Array<(...args: any[]) => void>>();
  * This is called when the resource starts
  */
 function initCore(): void {
-  alt.log('~lb~[CORE:CLIENT]~w~ Initializing client-side core resource v' + CORE_VERSION);
-  
+  alt.log(
+    '~lb~[CORE:CLIENT]~w~ Initializing client-side core resource v' +
+      CORE_VERSION
+  );
+
   // Register event handlers
   registerEventHandlers();
-  
+
   // Create the client-side core API
   createClientAPI();
-  
-  alt.log('~lg~[CORE:CLIENT]~w~ Client-side core resource initialized successfully');
+
+  alt.log(
+    '~lg~[CORE:CLIENT]~w~ Client-side core resource initialized successfully'
+  );
 }
 
 /**
@@ -33,7 +38,7 @@ function initCore(): void {
 function registerEventHandlers(): void {
   // Listen for core initialization event from the server
   alt.onServer('core:init', handleCoreInit);
-  
+
   // Listen for hot reload events
   alt.onServer('core:hotReload', handleHotReload);
 }
@@ -43,7 +48,7 @@ function registerEventHandlers(): void {
  */
 function handleCoreInit(): void {
   alt.log('~lb~[CORE:CLIENT]~w~ Core initialized by server');
-  
+
   // Notify the server that the client is ready
   alt.emitServer('core:clientReady');
 }
@@ -54,7 +59,7 @@ function handleCoreInit(): void {
  */
 function handleHotReload(pluginId: string): void {
   alt.log(`~lb~[CORE:CLIENT]~w~ Hot reload triggered for plugin: ${pluginId}`);
-  
+
   // Emit the event to all registered handlers
   emitEvent('core:hotReload', pluginId);
 }
@@ -73,10 +78,10 @@ function createClientAPI(): void {
       }
       eventHandlers.get(eventName)?.push(handler);
     },
-    
+
     // Emit an event
     emit: emitEvent,
-    
+
     // Log a message to the console
     log: (message: string, level: 'info' | 'warn' | 'error' = 'info') => {
       switch (level) {
@@ -91,13 +96,14 @@ function createClientAPI(): void {
           break;
       }
     },
-    
+
     // Get the core version
-    getVersion: () => CORE_VERSION
+    getVersion: () => CORE_VERSION,
   };
-  
+
   // Expose the core API globally
-  (window as any).core = coreAPI;
+  // Use global scope instead of window (which doesn't exist in alt:V client context)
+  (globalThis as any).core = coreAPI;
 }
 
 /**
@@ -111,7 +117,9 @@ function emitEvent(eventName: string, ...args: any[]): void {
     try {
       handler(...args);
     } catch (error) {
-      alt.logError(`[CORE:CLIENT] Error in event handler for ${eventName}: ${error}`);
+      alt.logError(
+        `[CORE:CLIENT] Error in event handler for ${eventName}: ${error}`
+      );
     }
   }
 }

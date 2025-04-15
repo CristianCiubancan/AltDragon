@@ -65,23 +65,89 @@
     </div>
 
     <script>
+      // Add console logging to help with debugging
+      const originalConsoleLog = console.log;
+      const originalConsoleError = console.error;
+      const originalConsoleWarn = console.warn;
+
+      // Override console methods to also display in the UI
+      console.log = function (...args) {
+        originalConsoleLog.apply(console, args);
+        try {
+          // Try to add a debug message to the player-info element
+          const playerInfo = document.getElementById('player-info');
+          if (playerInfo) {
+            playerInfo.innerHTML += `<br><span style="color: white;">LOG: ${args.join(
+              ' '
+            )}</span>`;
+          }
+        } catch (e) {
+          originalConsoleError('Error in console.log override:', e);
+        }
+      };
+
+      console.error = function (...args) {
+        originalConsoleError.apply(console, args);
+        try {
+          // Try to add an error message to the player-info element
+          const playerInfo = document.getElementById('player-info');
+          if (playerInfo) {
+            playerInfo.innerHTML += `<br><span style="color: red;">ERROR: ${args.join(
+              ' '
+            )}</span>`;
+          }
+        } catch (e) {
+          originalConsoleError('Error in console.error override:', e);
+        }
+      };
+
+      console.warn = function (...args) {
+        originalConsoleWarn.apply(console, args);
+        try {
+          // Try to add a warning message to the player-info element
+          const playerInfo = document.getElementById('player-info');
+          if (playerInfo) {
+            playerInfo.innerHTML += `<br><span style="color: yellow;">WARN: ${args.join(
+              ' '
+            )}</span>`;
+          }
+        } catch (e) {
+          originalConsoleError('Error in console.warn override:', e);
+        }
+      };
+
       // Handle communication with the game client
+      console.log('Initializing UI...');
+
       if ('alt' in window) {
-        // Listen for messages from the game client
-        alt.on('updatePlayerInfo', (playerName) => {
-          document.getElementById(
-            'player-info'
-          ).textContent = `Player: ${playerName}`;
-        });
+        console.log('alt object found in window');
 
-        // Set up button click handler
-        document.getElementById('close-btn').addEventListener('click', () => {
-          alt.emit('closeUI');
-        });
+        try {
+          // Listen for messages from the game client
+          alt.on('updatePlayerInfo', (playerName) => {
+            console.log(
+              `Received updatePlayerInfo event with data: ${playerName}`
+            );
+            document.getElementById(
+              'player-info'
+            ).textContent = `Player: ${playerName}`;
+          });
 
-        // Tell the client we're ready
-        alt.emit('uiReady');
-        console.log('UI ready event emitted');
+          // Set up button click handler
+          document.getElementById('close-btn').addEventListener('click', () => {
+            console.log('Close button clicked, emitting closeUI event');
+            alt.emit('closeUI');
+          });
+
+          // Tell the client we're ready
+          console.log('Emitting uiReady event to client');
+          alt.emit('uiReady');
+        } catch (error) {
+          console.error(`Error setting up event handlers: ${error.message}`);
+          if (error.stack) {
+            console.error(`Error stack: ${error.stack}`);
+          }
+        }
       } else {
         console.error(
           'alt not found in window - UI will not function correctly'
