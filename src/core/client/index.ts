@@ -38,9 +38,6 @@ function initCore(): void {
 function registerEventHandlers(): void {
   // Listen for core initialization event from the server
   alt.onServer('core:init', handleCoreInit);
-
-  // Listen for hot reload events
-  alt.onServer('core:hotReload', handleHotReload);
 }
 
 /**
@@ -51,17 +48,6 @@ function handleCoreInit(): void {
 
   // Notify the server that the client is ready
   alt.emitServer('core:clientReady');
-}
-
-/**
- * Handle hot reload event from the server
- * @param pluginId The ID of the plugin that was reloaded
- */
-function handleHotReload(pluginId: string): void {
-  alt.log(`~lb~[CORE:CLIENT]~w~ Hot reload triggered for plugin: ${pluginId}`);
-
-  // Emit the event to all registered handlers
-  emitEvent('core:hotReload', pluginId);
 }
 
 /**

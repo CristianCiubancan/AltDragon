@@ -8,10 +8,7 @@
     "postinstall": "pnpm binaries",
     "build": "node scripts/build.js",
     "build:prod": "node scripts/build.js --production",
-    "hot-reload": "node scripts/hot-reload.js",
-    "deploy-plugins": "node scripts/dev.js",
-    "dev": "node scripts/killproces.js && pnpm deploy-plugins",
-    "dev:linux": "node scripts/killproces.js && pnpm deploy-plugins"
+    "deploy-plugins": "node scripts/dev.js"
   },
   "keywords": [],
   "author": "",

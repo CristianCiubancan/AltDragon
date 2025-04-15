@@ -1,11 +1,10 @@
 # AltV Core Resource Framework
 
-A framework for AltV that provides a core resource to manage plugins and hot reloading functionality.
+A framework for AltV that provides a core resource to manage plugins.
 
 ## Features
 
 - **Core Resource**: Centralized management of plugins
-- **Hot Reloading**: Automatic reloading of resources when code changes
 - **TypeScript Support**: Full TypeScript support for type safety
 - **Plugin System**: Easy-to-use plugin system with lifecycle hooks
 - **Cross-Platform**: Works on both Windows and Linux
@@ -36,7 +35,7 @@ pnpm build
 4. Start the development server:
 
 ```bash
-pnpm dev
+pnpm deploy-plugins
 ```
 
 ## Development Workflow
@@ -96,7 +95,6 @@ const metadata: PluginMetadata = {
   author: 'Your Name',
   description: 'My awesome plugin',
   dependencies: ['core'],
-  supportsHotReload: true,
 };
 
 // Plugin lifecycle hooks
@@ -109,11 +107,6 @@ const lifecycle: PluginLifecycle = {
   onUnload: () => {
     core.log('My plugin unloaded!');
     // Clean up resources here
-  },
-
-  onReload: () => {
-    core.log('My plugin reloaded!');
-    // Handle reload here
   },
 };
 
@@ -159,10 +152,7 @@ deps = ["core"]
 
 - `pnpm build`: Build the project for development
 - `pnpm build:prod`: Build the project for production
-- `pnpm hot-reload`: Start the hot reload system
-- `pnpm deploy-plugins`: Deploy plugins to the resources directory
-- `pnpm dev`: Start the development server (Windows)
-- `pnpm dev:linux`: Start the development server (Linux)
+- `pnpm deploy-plugins`: Deploy plugins to the resources directory and start the server
 
 ## Core API
 
@@ -183,16 +173,6 @@ The core resource provides an API for plugins to interact with:
 - `emit(eventName, ...args)`: Emit an event
 - `log(message, level)`: Log a message to the console
 - `getVersion()`: Get the core version
-
-## Hot Reloading
-
-The hot reload system watches for file changes in the `src` directory and automatically:
-
-1. Recompiles the changed files
-2. Syncs the compiled files to the resources directory
-3. Triggers a resource reload in the AltV server
-
-This allows for rapid development without having to restart the server.
 
 ## License
 

@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <title>AltV Debug WebView</title>
     <style>
-      html, body {
+      html,
+      body {
         width: 100%;
         height: 100%;
         margin: 0;
@@ -107,7 +108,7 @@
       // Test if alt object exists
       if ('alt' in window) {
         addLog('✓ alt object found in window', 'success');
-        
+
         try {
           // Test if alt.emit exists
           if (typeof alt.emit === 'function') {
@@ -115,7 +116,7 @@
           } else {
             addLog('✗ alt.emit is not a function', 'error');
           }
-          
+
           // Test if alt.on exists
           if (typeof alt.on === 'function') {
             addLog('✓ alt.on is a function', 'success');
@@ -148,7 +149,10 @@
           addLog('Sending debugReady event to client...');
           alt.emit('debugReady');
         } catch (error) {
-          addLog(`✗ Error setting up event handlers: ${error.message}`, 'error');
+          addLog(
+            `✗ Error setting up event handlers: ${error.message}`,
+            'error'
+          );
         }
       } else {
         addLog('✗ alt object not found in window', 'error');

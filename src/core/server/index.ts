@@ -4,8 +4,7 @@
  */
 
 import * as alt from 'alt-server';
-import { initPluginManager, handlePluginReload } from './plugin-manager.js';
-import { initHotReload, reloadPlugin } from './hot-reload.js';
+import { initPluginManager } from './plugin-manager.js';
 
 // Core resource metadata
 const CORE_VERSION = '1.0.0';
@@ -20,9 +19,6 @@ function initCore(): void {
 
   // Initialize the plugin manager
   initPluginManager();
-
-  // Initialize the hot reload system
-  initHotReload();
 
   // Register event handlers
   registerEventHandlers();
@@ -39,17 +35,8 @@ function registerEventHandlers(): void {
   alt.on('playerConnect', handlePlayerConnect);
 
   // Listen for resource start/stop events
-  alt.on('resourceStart', handleResourceStart);
-  alt.on('resourceStop', handleResourceStop);
-
-  // Listen for hot reload events
-  alt.on('core:hotReload:complete', (event) => {
-    if (typeof event === 'string') {
-      handlePluginReload(event);
-    } else if (event && event.pluginId) {
-      handlePluginReload(event.pluginId);
-    }
-  });
+  alt.on('anyResourceStart', handleResourceStart);
+  alt.on('anyResourceStop', handleResourceStop);
 
   // Register console commands
   alt.on('consoleCommand', handleConsoleCommand);
@@ -107,14 +94,6 @@ function handleConsoleCommand(command: string, ...args: string[]): void {
     case 'core:plugins':
       // This would list all registered plugins
       alt.log(`~lb~[CORE]~w~ Plugins: TODO`);
-      break;
-
-    case 'core:reload':
-      if (args.length > 0) {
-        reloadPlugin(args[0]);
-      } else {
-        alt.log('~lr~[CORE]~w~ Usage: core:reload <pluginId>');
-      }
       break;
   }
 }

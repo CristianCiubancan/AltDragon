@@ -22,7 +22,6 @@ const metadata: PluginMetadata = {
   description:
     'An example plugin that demonstrates how to use the core resource',
   dependencies: ['core'],
-  supportsHotReload: true,
 };
 
 // Plugin lifecycle hooks
@@ -40,14 +39,6 @@ const lifecycle: PluginLifecycle = {
   onUnload: () => {
     core.log('Example plugin unloaded!');
   },
-
-  onReload: () => {
-    core.log('Example plugin reloaded!');
-  },
-
-  onDependencyReload: (dependencyId) => {
-    core.log(`Dependency ${dependencyId} was reloaded`);
-  },
 };
 
 /**
@@ -59,11 +50,6 @@ function registerEventHandlers(): void {
 
   // Listen for player disconnect events
   alt.on('playerDisconnect', handlePlayerDisconnect);
-
-  // Listen for core events
-  core.on('core:hotReload:complete', () => {
-    core.log('Hot reload completed!');
-  });
 }
 
 /**

@@ -71,7 +71,6 @@ function registerKeyBindings(): void {
     }
   });
 }
-
 /**
  * Toggle the UI visibility
  */

@@ -1,11 +1,10 @@
 /**
  * Development script for the AltV project
- * Starts the hot reload system and the AltV server
+ * Builds and starts the AltV server
  */
 
-const { startHotReload } = require('./hot-reload');
-const os = require('os');
 const { spawn } = require('child_process');
+const { build } = require('./build');
 
 /**
  * Start the development environment
@@ -13,8 +12,26 @@ const { spawn } = require('child_process');
 function startDev() {
   console.log('Starting development environment...');
 
-  // Start the hot reload system
-  startHotReload();
+  // Build the project
+  build(false);
+
+  // Start the AltV server
+  const serverProcess = spawn(
+    process.platform === 'win32' ? 'altv-server.exe' : './altv-server',
+    [],
+    { stdio: 'inherit', cwd: process.cwd() }
+  );
+
+  // Handle server exit
+  serverProcess.on('exit', (code) => {
+    console.log(`Server exited with code ${code}`);
+    process.exit(code);
+  });
+
+  // Handle process exit
+  process.on('exit', () => {
+    serverProcess.kill();
+  });
 
   console.log('Development environment started successfully!');
 }

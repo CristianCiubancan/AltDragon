@@ -171,7 +171,6 @@ function loadPlugin(pluginName: string): void {
       author: 'Unknown',
       description: '',
       dependencies: ['core'],
-      supportsHotReload: true,
     };
 
     // Try to load metadata from metadata.json if it exists
@@ -295,48 +294,4 @@ function getPlugin(pluginId: string): any | null {
  */
 function isPluginLoaded(pluginId: string): boolean {
   return plugins.has(pluginId);
-}
-
-/**
- * Handle a plugin reload
- * @param pluginId The ID of the plugin that was reloaded
- */
-export function handlePluginReload(pluginId: string): void {
-  alt.log(`~lb~[CORE]~w~ Handling reload for plugin: ${pluginId}`);
-
-  // Get the plugin
-  const plugin = plugins.get(pluginId);
-  if (!plugin) {
-    alt.log(
-      `~ly~[CORE]~w~ Plugin ${pluginId} is not registered, skipping reload handling`
-    );
-    return;
-  }
-
-  // Call the onReload hook if it exists
-  if (plugin.lifecycle.onReload) {
-    try {
-      plugin.lifecycle.onReload();
-    } catch (error) {
-      alt.logError(`[CORE] Error in onReload hook for ${pluginId}: ${error}`);
-    }
-  }
-
-  // Notify dependent plugins
-  for (const [id, otherPlugin] of plugins.entries()) {
-    if (
-      otherPlugin.metadata.dependencies.includes(pluginId) &&
-      otherPlugin.lifecycle.onDependencyReload
-    ) {
-      try {
-        otherPlugin.lifecycle.onDependencyReload(pluginId);
-      } catch (error) {
-        alt.logError(
-          `[CORE] Error in onDependencyReload hook for ${id}: ${error}`
-        );
-      }
-    }
-  }
-
-  alt.log(`~lg~[CORE]~w~ Plugin ${pluginId} reload handled successfully`);
 }
