@@ -19,10 +19,8 @@ const config = {
 
   // Output directories
   resourcesDir: path.join(__dirname, '..', 'resources'),
-  mainDir: path.join(__dirname, '..', 'resources', 'main'),
-  outputCoreDir: path.join(__dirname, '..', 'resources', 'main', 'core'),
-  outputPluginsDir: path.join(__dirname, '..', 'resources', 'main', 'plugins'),
-
+  outputCoreDir: path.join(__dirname, '..', 'resources', 'core'),
+  
   // TypeScript configuration
   tsConfig: path.join(__dirname, '..', 'tsconfig.json'),
 };
@@ -173,11 +171,11 @@ deps = []
 }
 
 /**
- * Build all plugins
+ * Build all plugins as separate alt:V resources
  * @returns {boolean} Whether all plugins were built successfully
  */
 function buildPlugins() {
-  console.log('Building plugins...');
+  console.log('Building plugins as separate resources...');
 
   try {
     // Get all plugin directories
@@ -198,8 +196,6 @@ function buildPlugins() {
     let failureCount = 0;
     const failedPlugins = [];
     const builtPlugins = [];
-    const clientFiles = [];
-    const serverFiles = [];
 
     for (const pluginName of pluginDirs) {
       const result = buildPlugin(pluginName);
@@ -207,34 +203,17 @@ function buildPlugins() {
         successCount++;
         builtPlugins.push({
           name: pluginName,
-          clientFiles: result.clientFiles || [],
-          serverFiles: result.serverFiles || [],
         });
-
-        // Add client files to the list
-        if (result.clientFiles && result.clientFiles.length > 0) {
-          clientFiles.push(...result.clientFiles);
-        }
-
-        // Add server files to the list
-        if (result.serverFiles && result.serverFiles.length > 0) {
-          serverFiles.push(...result.serverFiles);
-        }
       } else {
         failureCount++;
         failedPlugins.push(pluginName);
       }
     }
 
-    // Update the core resource.toml with all plugin client and server files
-    updateCoreResourceToml(clientFiles, serverFiles);
-
     // Print the list of built plugins
     console.log('\nBuilt plugins:');
     builtPlugins.forEach((plugin) => {
-      console.log(
-        `- ${plugin.name} (${plugin.clientFiles.length} client files, ${plugin.serverFiles.length} server files)`
-      );
+      console.log(`- ${plugin.name} (as standalone resource)`);
     });
 
     // Report results
@@ -247,7 +226,7 @@ function buildPlugins() {
       );
       return false;
     } else {
-      console.log(`Built ${successCount} plugins successfully!`);
+      console.log(`Built ${successCount} plugins successfully as standalone resources!`);
       return true;
     }
   } catch (error) {
@@ -344,9 +323,9 @@ function updateCoreResourceToml(clientFiles, serverFiles = []) {
 }
 
 /**
- * Build a specific plugin
+ * Build a specific plugin as a separate alt:V resource
  * @param {string} pluginName The name of the plugin to build
- * @returns {Object} Build result with success status and client files
+ * @returns {Object} Build result with success status
  */
 function buildPlugin(pluginName) {
   console.log(`Building plugin: ${pluginName}...`);
@@ -360,13 +339,8 @@ function buildPlugin(pluginName) {
       return { success: false };
     }
 
-    const pluginOutDir = path.join(config.outputCoreDir, 'plugins', pluginName);
-
-    // Create plugins directory in core if it doesn't exist
-    const pluginsDir = path.join(config.outputCoreDir, 'plugins');
-    fs.ensureDirSync(pluginsDir);
-
-    // Create plugin output directory if it doesn't exist
+    // Create a separate resource directory for this plugin
+    const pluginOutDir = path.join(config.resourcesDir, pluginName);
     fs.ensureDirSync(pluginOutDir);
 
     // Create server directory
@@ -380,16 +354,9 @@ function buildPlugin(pluginName) {
     // Create shared directory if needed
     const sharedDir = path.join(pluginOutDir, 'shared');
 
-    // Track files for this plugin
-    const clientFiles = [];
-    const serverFiles = [];
-
     // Check if the plugin has server-side code
     const serverSrcDir = path.join(pluginSrcDir, 'server');
     if (fs.existsSync(serverSrcDir)) {
-      // Add server files pattern to the list
-      serverFiles.push(`plugins/${pluginName}/server/*`);
-
       // Compile server-side TypeScript
       compileTypeScript(
         path.join(serverSrcDir, '**', '*.ts'),
@@ -404,9 +371,6 @@ function buildPlugin(pluginName) {
     // Check if the plugin has client-side code
     const clientSrcDir = path.join(pluginSrcDir, 'client');
     if (fs.existsSync(clientSrcDir)) {
-      // Add client files pattern to the list
-      clientFiles.push(`plugins/${pluginName}/client/*`);
-
       // Compile client-side TypeScript
       compileTypeScript(
         path.join(clientSrcDir, '**', '*.ts'),
@@ -432,9 +396,6 @@ function buildPlugin(pluginName) {
 
         // Copy all files from client/html directory
         copyDirectory(clientHtmlSrcDir, clientHtmlDir);
-
-        // Add client/html files pattern to the list
-        clientFiles.push(`plugins/${pluginName}/client/html/*`);
       }
     }
 
@@ -443,9 +404,6 @@ function buildPlugin(pluginName) {
     if (fs.existsSync(sharedSrcDir)) {
       // Create shared directory if it doesn't exist
       fs.ensureDirSync(sharedDir);
-
-      // Add shared files pattern to the list
-      clientFiles.push(`plugins/${pluginName}/shared/*`);
 
       // Compile shared TypeScript
       compileTypeScript(
@@ -458,24 +416,25 @@ function buildPlugin(pluginName) {
       copyFiles(path.join(sharedSrcDir, '**', '*.js'), sharedDir);
     }
 
-    // We don't need to copy resource.toml anymore as plugins are part of the core resource
-    // But we'll save the plugin metadata for the core to use
-    const pluginMetadataPath = path.join(pluginOutDir, 'metadata.json');
-    const metadata = {
-      id: pluginName,
-      name: pluginName,
-      version: '1.0.0',
-      dependencies: ['core'],
-      supportsHotReload: true,
-      clientFiles: clientFiles,
-      serverFiles: serverFiles,
-    };
+    // Create a resource.toml file for this plugin
+    const pluginResourceToml = path.join(pluginOutDir, 'resource.toml');
+    
+    // Start with default values
+    let resourceTomlContent = `# ${pluginName} resource configuration
+type = "js"
+main = "server/index.js"
+client-main = "client/index.js"
+client-files = ["client/*", "shared/*"]
+deps = ["core"]
+name = "${pluginName}"
+version = "1.0.0"
+`;
 
-    // Try to read metadata from resource.toml if it exists
-    const resourceToml = path.join(pluginSrcDir, 'resource.toml');
-    if (fs.existsSync(resourceToml)) {
+    // Try to read metadata from source resource.toml if it exists
+    const srcResourceToml = path.join(pluginSrcDir, 'resource.toml');
+    if (fs.existsSync(srcResourceToml)) {
       try {
-        const tomlContent = fs.readFileSync(resourceToml, 'utf8');
+        const tomlContent = fs.readFileSync(srcResourceToml, 'utf8');
         // Extract basic metadata from TOML (simple approach)
         const nameMatch = tomlContent.match(/name\s*=\s*"([^"]+)"/i);
         const versionMatch = tomlContent.match(/version\s*=\s*"([^"]+)"/i);
@@ -483,20 +442,35 @@ function buildPlugin(pluginName) {
         const authorMatch = tomlContent.match(/author\s*=\s*"([^"]+)"/i);
         const descMatch = tomlContent.match(/description\s*=\s*"([^"]+)"/i);
 
-        if (nameMatch && nameMatch[1]) metadata.name = nameMatch[1];
-        if (versionMatch && versionMatch[1]) metadata.version = versionMatch[1];
-        if (authorMatch && authorMatch[1]) metadata.author = authorMatch[1];
-        if (descMatch && descMatch[1]) metadata.description = descMatch[1];
+        // Update the resource.toml content with extracted values
+        if (nameMatch && nameMatch[1]) {
+          resourceTomlContent = resourceTomlContent.replace(`name = "${pluginName}"`, `name = "${nameMatch[1]}"`);
+        }
+        
+        if (versionMatch && versionMatch[1]) {
+          resourceTomlContent = resourceTomlContent.replace(`version = "1.0.0"`, `version = "${versionMatch[1]}"`);
+        }
+        
+        if (authorMatch && authorMatch[1]) {
+          resourceTomlContent += `author = "${authorMatch[1]}"\n`;
+        }
+        
+        if (descMatch && descMatch[1]) {
+          resourceTomlContent += `description = "${descMatch[1]}"\n`;
+        }
+        
         if (depsMatch && depsMatch[1]) {
           const deps = depsMatch[1]
             .split(',')
             .map((d) => d.trim().replace(/"/g, ''));
-          metadata.dependencies = deps;
-
+            
           // Always ensure core is a dependency
-          if (!metadata.dependencies.includes('core')) {
-            metadata.dependencies.push('core');
+          if (!deps.includes('core')) {
+            deps.push('core');
           }
+          
+          const depsStr = deps.map(d => `"${d}"`).join(', ');
+          resourceTomlContent = resourceTomlContent.replace(`deps = ["core"]`, `deps = [${depsStr}]`);
         }
       } catch (error) {
         console.error(
@@ -504,16 +478,26 @@ function buildPlugin(pluginName) {
         );
       }
     }
+    
+    // Write the resource.toml file
+    fs.writeFileSync(pluginResourceToml, resourceTomlContent);
 
+    // Also create a metadata.json file for potential use by the core 
+    const pluginMetadataPath = path.join(pluginOutDir, 'metadata.json');
+    const metadata = {
+      id: pluginName,
+      name: pluginName,
+      version: '1.0.0',
+      dependencies: ['core'],
+      supportsHotReload: true,
+      isStandaloneResource: true
+    };
+    
     // Save the metadata
     fs.writeFileSync(pluginMetadataPath, JSON.stringify(metadata, null, 2));
 
-    console.log(`Plugin ${pluginName} built successfully!`);
-    return {
-      success: true,
-      clientFiles: clientFiles,
-      serverFiles: serverFiles,
-    };
+    console.log(`Plugin ${pluginName} built successfully as standalone resource!`);
+    return { success: true };
   } catch (error) {
     console.error(`Error building plugin ${pluginName}: ${error.message}`);
     if (error.stack) {

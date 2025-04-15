@@ -18,7 +18,17 @@ const registeredPlugins = new Map<string, RegisteredPlugin>();
 
 // Helper function to get the WebView URL for a plugin HTML file
 function getPluginHtmlUrl(pluginId: string, filename: string): string {
-  return `http://resource/plugins/${pluginId}/client/html/${filename}`;
+  // For plugins bundled in the core (old style, deprecated)
+  const oldStyleUrl = `http://resource/plugins/${pluginId}/client/html/${filename}`;
+  
+  // For plugins as separate resources (new style, recommended)
+  // Use http://resource/<resourceName> format which is the standard alt:V format
+  const newStyleUrl = `http://resource/${pluginId}/client/html/${filename}`;
+  
+  // Try to determine if this is a standalone resource or bundled plugin
+  const isStandaloneResource = true; // We now always build plugins as separate resources
+  
+  return isStandaloneResource ? newStyleUrl : oldStyleUrl;
 }
 
 /**
@@ -375,10 +385,11 @@ function handleKeyUp(key: number): void {
   const core = (globalThis as any).core;
   if (!core) return;
 
-  // F12 to toggle all plugin HTML files
-  if (key === 123) {
-    core.log('F12 pressed, toggling all plugin HTML files');
+  // Numpad 1 to toggle all plugin HTML files
+  if (key === 97) {
+    core.log('Numpad 1 pressed, toggling all plugin HTML files');
     toggleAllPluginsHTML();
+    showNotification('HTML UI toggled (Numpad 1)');
   }
 }
 

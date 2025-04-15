@@ -53,7 +53,37 @@ src/
     └── [other-plugins]/       # Other plugins
 ```
 
-**Note:** All plugin development should be done in the `src/plugins` directory. The compiled output will be placed in `resources/main/plugins`.
+**Note:** All plugin development should be done in the `src/plugins` directory. The compiled output will be placed in `resources/main/core/plugins`.
+
+### Build Process
+
+When you build the project, the following happens:
+
+1. The source files in `src/core` and `src/plugins` are compiled using TypeScript
+2. All plugins are built into the core resource's directory structure:
+   ```
+   resources/
+   └── main/
+       └── core/               # Core resource
+           ├── server/         # Server-side core code
+           ├── client/         # Client-side core code
+           ├── shared/         # Shared code
+           ├── plugins/        # All plugins are built here
+           │   ├── example-ts/
+           │   │   ├── client/
+           │   │   ├── server/
+           │   │   └── metadata.json
+           │   └── example-html/
+           │       ├── client/
+           │       ├── server/
+           │       └── metadata.json
+           └── resource.toml   # Main resource configuration (includes all plugins)
+   ```
+
+3. The core's `resource.toml` is updated to include all plugin files
+4. HTML and other assets are copied to their respective locations
+
+This structure means that all plugins are part of the same resource (the core resource), which allows for better integration and communication between plugins.
 
 ### Creating a New Plugin
 
@@ -187,16 +217,35 @@ function toggleUI(): void {
  * Create and show the UI
  */
 function createUI(): void {
-  if (uiWebView) {
+  if (uiVisible) {
     destroyUI();
   }
-
-  // Create the WebView with our HTML file
-  uiWebView = new alt.WebView('http://resource/client/html/ui.html');
-
-  // Show the cursor
-  alt.showCursor(true);
-
+  
+  // Define UI event handlers
+  const eventHandlers = {
+    'uiReady': () => {
+      core.log('UI is ready');
+      
+      // Send data to the UI
+      uiWebView?.emit('updateData', {
+        playerName: alt.Player.local.name,
+        health: alt.Player.local.health
+      });
+    }
+  };
+  
+  // Create the WebView with our HTML file using the core API
+  uiWebView = core.createUIWebView('my-plugin', 'client/html/ui.html', {
+    handleCursor: true,
+    disableControls: true,
+    eventHandlers: eventHandlers
+  });
+  
+  if (!uiWebView) {
+    core.log('Failed to create UI WebView', 'error');
+    return;
+  }
+  
   // Set UI as visible
   uiVisible = true;
 }
@@ -205,14 +254,12 @@ function createUI(): void {
  * Destroy the UI
  */
 function destroyUI(): void {
-  if (uiWebView) {
-    uiWebView.destroy();
+  // Use the core API to close the WebView
+  if (core.hasActiveWebView('my-plugin')) {
+    core.closeUIWebView('my-plugin');
     uiWebView = null;
   }
-
-  // Hide the cursor
-  alt.showCursor(false);
-
+  
   // Set UI as hidden
   uiVisible = false;
 }
@@ -313,7 +360,109 @@ deps = ["core"]
 - `pnpm deploy-plugins`: Deploy plugins to the resources directory
 - `pnpm kill-server`: Kill any running AltV server processes
 
-See [BUILD-README.md](BUILD-README.md) for detailed information about the build system.
+## WebView Integration
+
+### Working with WebViews
+
+The framework provides a consistent way to create and manage WebViews in your plugins:
+
+1. **Basic WebView Creation**
+
+```typescript
+// Create a basic WebView (standard approach)
+const webview = core.createWebView('client/html/my-ui.html');
+
+// Create a WebView with plugin-specific path resolution
+const webview = core.createWebView('client/html/my-ui.html', false, 'my-plugin-id');
+```
+
+2. **Managed UI WebView Creation**
+
+```typescript
+// Create a managed UI WebView with standardized handling
+const webview = core.createUIWebView('my-plugin', 'client/html/my-ui.html', {
+  // These are all optional with defaults shown:
+  handleCursor: true,       // Auto-show cursor
+  disableControls: true,    // Disable game controls
+  overlay: false,           // Use overlay mode
+  eventHandlers: {          // Register event handlers
+    'myEvent': (data) => {
+      console.log('Event received:', data);
+    }
+  }
+});
+
+// Create an overlay WebView that can coexist with other WebViews
+const overlayWebview = core.createUIWebView('my-plugin-overlay', 'client/html/overlay.html', {
+  handleCursor: false,      // Don't show cursor for overlay
+  disableControls: false,   // Don't disable game controls
+  overlay: true,            // Enable overlay mode
+  eventHandlers: {
+    'overlayEvent': (data) => {
+      console.log('Overlay event received:', data);
+    }
+  }
+});
+```
+
+3. **Closing WebViews**
+
+```typescript
+// Close a specific WebView
+core.closeUIWebView('my-plugin');
+
+// Close all WebViews
+core.closeAllWebViews();
+```
+
+4. **WebView Status**
+
+```typescript
+// Check if a plugin has an active WebView
+const isActive = core.hasActiveWebView('my-plugin');
+
+// Get all active WebViews
+const activeWebViews = core.getActiveWebViews();
+```
+
+The managed WebView system automatically provides:
+- Cursor show/hide with `alt.showCursor()`
+- Game controls toggling with `alt.toggleGameControls()`
+- WebView focus management with `webview.focus()` and `webview.unfocus()`
+- Standard close events handling for 'ui:close', 'closeUI', and 'close'
+- Proper cleanup when closing WebViews
+
+This ensures all WebViews are properly clickable and interactive without manual focus management.
+
+### Working with Multiple WebViews
+
+The framework supports multiple concurrent WebViews:
+
+1. **Regular WebViews**: These take over the screen, show cursor, and disable game controls
+2. **Overlay WebViews**: These can be displayed alongside other UIs without disrupting gameplay
+
+When using multiple WebViews:
+
+```typescript
+// Create a main UI (will show cursor and disable controls)
+const mainUI = core.createUIWebView('my-plugin-main', 'client/html/main.html');
+
+// Create an overlay that can be shown alongside the main UI
+const statsOverlay = core.createUIWebView('my-plugin-stats', 'client/html/stats.html', {
+  overlay: true,            // Make it an overlay
+  handleCursor: false,      // Don't show cursor for this WebView
+  disableControls: false    // Don't disable game controls
+});
+
+// You can have multiple overlays active simultaneously
+const mapOverlay = core.createUIWebView('my-plugin-map', 'client/html/map.html', {
+  overlay: true,
+  handleCursor: false,
+  disableControls: false
+});
+```
+
+Focus is automatically managed to ensure clickable elements work correctly in each WebView.
 
 ## Core API
 
@@ -334,6 +483,13 @@ The core resource provides an API for plugins to interact with:
 - `emit(eventName, ...args)`: Emit an event
 - `log(message, level)`: Log a message to the console
 - `getVersion()`: Get the core version
+- `standardizeUrl(url)`: Standardize a URL for WebView
+- `createWebView(url, isOverlay)`: Create a WebView with a standardized URL
+- `createUIWebView(pluginId, htmlPath, options)`: Create and manage a UI WebView
+- `closeUIWebView(pluginId)`: Close a UI WebView
+- `hasActiveWebView(pluginId)`: Check if a plugin has an active WebView
+- `getActiveWebViews()`: Get all active WebViews
+- `closeAllWebViews()`: Close all WebViews
 
 ## License
 

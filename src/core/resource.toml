@@ -1,5 +1,7 @@
 type = "js"
 main = "server/index.js"
 client-main = "client/index.js"
-client-files = ["client/*", "plugins/*/client/*", "plugins/*/shared/*"]
+client-files = ["client/*", "shared/*"]
 deps = []
+name = "core"
+version = "1.0.0"
