@@ -133,9 +133,6 @@ function startReloadServer() {
       console.log(
         `Reload server listening on tcp://0.0.0.0:${config.reloadPort}`
       );
-
-      // Update the reload port in the core resource
-      updateReloadPort(config.reloadPort);
     });
   } catch (error) {
     console.error(`Error starting reload server: ${error.message}`);
@@ -145,37 +142,8 @@ function startReloadServer() {
   }
 }
 
-/**
- * Update the reload port in the core resource
- * @param {number} port The port to use
- */
-function updateReloadPort(port) {
-  try {
-    // Update the external-reload.js file in the core resource if it exists
-    const externalReloadPath = path.join(
-      config.outputCoreDir,
-      'server',
-      'external-reload.js'
-    );
-
-    if (fs.existsSync(externalReloadPath)) {
-      let content = fs.readFileSync(externalReloadPath, 'utf8');
-
-      // Replace the port in the file
-      content = content.replace(
-        /RELOAD_PORT\s*=\s*\d+/,
-        `RELOAD_PORT = ${port}`
-      );
-
-      // Write the updated content
-      fs.writeFileSync(externalReloadPath, content);
-
-      console.log(`Updated reload port in core resource to ${port}`);
-    }
-  } catch (error) {
-    console.error(`Error updating reload port: ${error.message}`);
-  }
-}
+// This function is unnecessary since we're not using external-reload.js anymore
+// Removing to eliminate redundant code
 
 /**
  * Start the file watcher
@@ -218,7 +186,7 @@ function startFileWatcher() {
         } else {
           // Extract plugin name from resource name
           const pluginName = resourceName;
-          const { buildPlugin } = require('./build-improved');
+          const { buildPlugin } = require('./build');
           buildPlugin(pluginName);
         }
 

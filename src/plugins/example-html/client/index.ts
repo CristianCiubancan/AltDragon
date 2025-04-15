@@ -165,7 +165,7 @@ function updateUIData(): void {
       z: pos.z.toFixed(2),
     },
     health: player.health,
-    armor: player.armor,
+    armor: player.armour,
   });
 }
 

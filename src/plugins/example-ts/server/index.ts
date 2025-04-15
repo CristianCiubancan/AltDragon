@@ -22,7 +22,6 @@ const metadata: PluginMetadata = {
   description:
     'An example plugin that demonstrates how to use the core resource',
   dependencies: ['core'],
-  supportsHotReload: true,
 };
 
 // Plugin lifecycle hooks

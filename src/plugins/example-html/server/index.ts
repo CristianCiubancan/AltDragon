@@ -72,9 +72,9 @@ function handlePlayerConnect(player: alt.Player) {
   // Spawn the player
   player.spawn(0, 0, 72);
   
-  // Set player health and armor
+  // Set player health and armour
   player.health = 100;
-  player.armor = 100;
+  player.armour = 100;
   
   // Send welcome message
   alt.emitClient(player, 'example:notification', 'Welcome to the server!');

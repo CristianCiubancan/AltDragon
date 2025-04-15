@@ -6,6 +6,21 @@
 import * as alt from 'alt-client';
 import * as native from 'natives';
 
+// Interface for plugin registration
+interface RegisteredPlugin {
+  id: string;
+  hasHTML: boolean;
+  htmlFiles: string[]; // Array of HTML paths to load
+}
+
+// Track registered plugins with their HTML paths
+const registeredPlugins = new Map<string, RegisteredPlugin>();
+
+// Helper function to get the WebView URL for a plugin HTML file
+function getPluginHtmlUrl(pluginId: string, filename: string): string {
+  return `http://resource/plugins/${pluginId}/client/html/${filename}`;
+}
+
 /**
  * Initialize the client-side plugin loader
  * This is called when the core resource starts on the client side
@@ -82,6 +97,16 @@ function registerExampleTsPlugin(): void {
     return;
   }
 
+  // Register plugin in the registry with HTML paths
+  registeredPlugins.set(pluginId, { 
+    id: pluginId, 
+    hasHTML: true, 
+    htmlFiles: [
+      getPluginHtmlUrl(pluginId, 'index.html'),
+      getPluginHtmlUrl(pluginId, 'debug.html')
+    ]
+  });
+
   // Register event handlers
   core.on(`plugin:${pluginId}:init`, () => {
     alt.log(`~lb~[CORE:CLIENT]~w~ Initializing ${pluginId} plugin`);
@@ -126,6 +151,15 @@ function registerExampleHtmlPlugin(): void {
     alt.logError(`[CORE:CLIENT] Core API not available for plugin ${pluginId}`);
     return;
   }
+  
+  // Register plugin in the registry with HTML paths
+  registeredPlugins.set(pluginId, { 
+    id: pluginId, 
+    hasHTML: true, 
+    htmlFiles: [
+      getPluginHtmlUrl(pluginId, 'ui.html')
+    ]
+  });
 
   // Register event handlers
   core.on(`plugin:${pluginId}:init`, () => {
@@ -224,6 +258,115 @@ function giveWeapons(): void {
 let webview: alt.WebView | null = null;
 let uiVisible = false;
 
+// Store all active webviews 
+let activeWebviews: alt.WebView[] = [];
+let pluginUIVisible = false;
+
+/**
+ * Toggle HTML files from all plugins
+ */
+function toggleAllPluginsHTML(): void {
+  const core = (globalThis as any).core;
+  if (!core) return;
+  
+  // If UI is visible, close it
+  if (pluginUIVisible) {
+    closeAllPluginWebviews();
+    return;
+  }
+  
+  // Otherwise, load all plugin UIs
+  core.log('Loading HTML files from all plugins');
+
+  // Close any already open individual UIs first
+  if (uiVisible) {
+    closeUI();
+  }
+  
+  if (htmlUiVisible) {
+    closeHtmlUI();
+  }
+  
+  // Clear the array of active webviews
+  activeWebviews = [];
+  let webviewsCreated = 0;
+
+  // Loop through all registered plugins and create webviews for their HTML files
+  registeredPlugins.forEach((plugin: RegisteredPlugin, pluginId: string) => {
+    if (plugin.hasHTML && plugin.htmlFiles.length > 0) {
+      // Loop through all HTML files for this plugin
+      plugin.htmlFiles.forEach(htmlPath => {
+        try {
+          core.log(`Creating WebView for plugin ${pluginId} at: ${htmlPath}`);
+          
+          const webview = new alt.WebView(htmlPath);
+        
+          if (webview) {
+            activeWebviews.push(webview);
+            webviewsCreated++;
+            
+            // Add event listeners for closing
+            webview.on('closeUI', () => {
+              core.log(`Received closeUI event from WebView for plugin ${pluginId}`);
+              closeAllPluginWebviews();
+            });
+            
+            webview.on('ui:close', () => {
+              core.log(`Received ui:close event from WebView for plugin ${pluginId}`);
+              closeAllPluginWebviews();
+            });
+            
+            core.log(`WebView created successfully for plugin ${pluginId}`);
+          }
+        } catch (error) {
+          core.log(`Error creating WebView for plugin ${pluginId}: ${error}`, 'error');
+        }
+      });
+    }
+  });
+  
+  // Show cursor and disable game controls if any webviews were created
+  if (webviewsCreated > 0) {
+    alt.showCursor(true);
+    alt.toggleGameControls(false);
+    pluginUIVisible = true;
+    core.log(`Created ${webviewsCreated} WebViews for plugin HTML files`);
+  } else {
+    core.log('No HTML files found in plugins', 'warn');
+  }
+}
+
+/**
+ * Close all plugin webviews
+ */
+function closeAllPluginWebviews(): void {
+  const core = (globalThis as any).core;
+  if (!core) return;
+  
+  try {
+    // Destroy each webview
+    activeWebviews.forEach(webview => {
+      if (webview) {
+        webview.destroy();
+      }
+    });
+    
+    // Clear the array
+    activeWebviews = [];
+    
+    // Hide cursor and restore game controls
+    alt.showCursor(false);
+    alt.toggleGameControls(true);
+    
+    // Update visibility flag
+    pluginUIVisible = false;
+    
+    core.log('All plugin WebViews closed');
+  } catch (error) {
+    core.log(`Error closing WebViews: ${error}`, 'error');
+  }
+}
+
 /**
  * Handle key up events
  * @param key The key code
@@ -232,74 +375,10 @@ function handleKeyUp(key: number): void {
   const core = (globalThis as any).core;
   if (!core) return;
 
-  // F12 to toggle UI
+  // F12 to toggle all plugin HTML files
   if (key === 123) {
-    core.log('F12 pressed, toggling UI');
-    toggleUI();
-  }
-}
-
-/**
- * Toggle the UI visibility
- */
-function toggleUI(): void {
-  if (uiVisible) {
-    closeUI();
-  } else {
-    showUI();
-  }
-}
-
-/**
- * Show the UI
- */
-function showUI(): void {
-  if (webview) return;
-
-  const core = (globalThis as any).core;
-  if (!core) return;
-
-  try {
-    core.log(
-      'Attempting to create WebView at: http://resource/client/html/index.html'
-    );
-
-    webview = new alt.WebView(
-      'http://resource/example-ts/client/html/index.html'
-    );
-
-    if (!webview) {
-      core.log('WebView creation failed - webview is null', 'error');
-      return;
-    }
-
-    webview.on('closeUI', () => {
-      core.log('Received closeUI event from WebView');
-      closeUI();
-    });
-
-    webview.on('uiReady', () => {
-      core.log('UI is ready - received uiReady event');
-
-      const localPlayer = alt.Player.local;
-      if (localPlayer) {
-        core.log(`Sending player info to WebView: ${localPlayer.name}`);
-        webview?.emit('updatePlayerInfo', localPlayer.name);
-      } else {
-        core.log('Could not get local player info', 'warn');
-      }
-    });
-
-    // Show cursor
-    alt.showCursor(true);
-
-    // Set focus to game
-    alt.toggleGameControls(false);
-
-    uiVisible = true;
-    core.log('UI shown successfully');
-  } catch (error) {
-    core.log(`Error showing UI: ${error}`, 'error');
+    core.log('F12 pressed, toggling all plugin HTML files');
+    toggleAllPluginsHTML();
   }
 }
 
@@ -354,13 +433,10 @@ function showHtmlUI(): void {
   if (!core) return;
 
   try {
-    core.log(
-      'Attempting to create HTML WebView at: http://resource/client/html/ui.html'
-    );
+    const htmlPath = getPluginHtmlUrl('example-html', 'ui.html');
+    core.log(`Attempting to create HTML WebView at: ${htmlPath}`);
 
-    htmlWebview = new alt.WebView(
-      'http://resource/example-html/client/html/ui.html'
-    );
+    htmlWebview = new alt.WebView(htmlPath);
 
     if (!htmlWebview) {
       core.log('HTML WebView creation failed - webview is null', 'error');

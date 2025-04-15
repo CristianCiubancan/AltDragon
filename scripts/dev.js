@@ -50,35 +50,11 @@ function startDev(hotReload = true) {
 }
 
 /**
- * Start development with hot reloading
+ * Start development without hot reloading (removed due to hot-reload feature being removed)
  */
 function startHotReloadDev() {
-  console.log('Starting development with hot reloading...');
-
-  // Start the hot reload process
-  const hotReloadProcess = spawn('node', ['scripts/hot-reload.js'], {
-    stdio: 'inherit',
-    shell: true,
-  });
-
-  // Handle process exit
-  hotReloadProcess.on('exit', (code) => {
-    console.log(`Hot reload process exited with code ${code}`);
-    process.exit(code);
-  });
-
-  // Handle process errors
-  hotReloadProcess.on('error', (error) => {
-    console.error(`Hot reload process error: ${error.message}`);
-    process.exit(1);
-  });
-
-  // Handle SIGINT (Ctrl+C)
-  process.on('SIGINT', () => {
-    console.log('Received SIGINT, shutting down...');
-    hotReloadProcess.kill();
-    process.exit(0);
-  });
+  console.log('Hot reloading has been removed from this project. Using regular development mode instead.');
+  startRegularDev();
 }
 
 /**

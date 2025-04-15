@@ -26,8 +26,7 @@ export interface PluginMetadata {
   /** Dependencies on other plugins */
   dependencies: string[];
 
-  /** Whether the plugin supports hot reloading */
-  supportsHotReload?: boolean;
+  /** Additional metadata fields can be added here */
 }
 
 /**

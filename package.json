@@ -8,8 +8,7 @@
     "postinstall": "pnpm binaries",
     "build": "node scripts/build.js",
     "build:prod": "node scripts/build.js --production",
-    "dev": "node scripts/dev.js dev",
-    "dev:no-hot": "node scripts/dev.js dev:no-hot",
+    "dev": "node scripts/dev.js dev:no-hot",
     "deploy-plugins": "node scripts/dev.js deploy-plugins",
     "kill-server": "node scripts/killproces.js"
   },
