@@ -5,7 +5,14 @@ node_modules/
 
 # Build outputs
 dist/
-resources/
+
+# Alt:V resources
+resources/main
+# resources/fonts
+# resources/images
+# resources/rmlui
+# resources/sounds
+
 .astro/
 .output/
 _site/

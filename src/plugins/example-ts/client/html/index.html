@@ -56,46 +56,15 @@
   </head>
   <body>
     <div class="container">
-      <div class="title">Example UI</div>
+      <div class="title">Example TypeScript UI</div>
       <div class="content">
-        <p>Welcome to the example resource!</p>
+        <p>Welcome to the example TypeScript plugin!</p>
         <p id="player-info">Loading player info...</p>
       </div>
       <button id="close-btn">Close</button>
     </div>
 
     <script>
-      // Suppress the ResizeObserver loop error
-      window.addEventListener(
-        'error',
-        function (e) {
-          if (e && e.message && e.message.includes('ResizeObserver')) {
-            console.warn('ResizeObserver error suppressed:', e.message);
-            e.stopImmediatePropagation();
-            return true;
-          }
-        },
-        true
-      );
-
-      // Additional handler for unhandled promise rejections
-      window.addEventListener('unhandledrejection', function (e) {
-        if (
-          e &&
-          e.reason &&
-          e.reason.message &&
-          e.reason.message.includes('ResizeObserver')
-        ) {
-          console.warn(
-            'ResizeObserver promise error suppressed:',
-            e.reason.message
-          );
-          e.preventDefault();
-          e.stopPropagation();
-          return true;
-        }
-      });
-
       // Handle communication with the game client
       if ('alt' in window) {
         // Listen for messages from the game client
@@ -108,12 +77,6 @@
         // Set up button click handler
         document.getElementById('close-btn').addEventListener('click', () => {
           alt.emit('closeUI');
-        });
-
-        // Listen for ping event to test connection
-        alt.on('ping', () => {
-          alt.emit('pong');
-          console.log('Ping received, responded with pong');
         });
 
         // Tell the client we're ready

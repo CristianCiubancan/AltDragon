@@ -6,9 +6,12 @@
   "scripts": {
     "binaries": "altv-pkg",
     "postinstall": "pnpm binaries",
-    "deploy-plugins": "node scripts/dev.js || true",
-    "dev": "node scripts/killproces.js && pnpm deploy-plugins && altv-server.exe",
-    "dev:linux": "node scripts/dev.js && echo $? && ./altv-server"
+    "build": "node scripts/build.js",
+    "build:prod": "node scripts/build.js --production",
+    "hot-reload": "node scripts/hot-reload.js",
+    "deploy-plugins": "node scripts/dev.js",
+    "dev": "node scripts/killproces.js && pnpm deploy-plugins",
+    "dev:linux": "node scripts/killproces.js && pnpm deploy-plugins"
   },
   "keywords": [],
   "author": "",
@@ -25,8 +28,12 @@
     "altv-pkg": "^2.7.5"
   },
   "dependencies": {
+    "chokidar": "^3.5.3",
     "concurrently": "^8.2.2",
     "dotenv": "^16.4.5",
+    "esbuild": "^0.20.2",
+    "fs-extra": "^11.2.0",
+    "glob": "^11.0.1",
     "mongodb": "^6.8.0",
     "node-cron": "^3.0.3",
     "typescript": "^5.5.4",
