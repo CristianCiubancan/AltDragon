@@ -73,8 +73,8 @@ export function initPluginManager(): void {
   // Expose the core API globally so plugins can access it
   (global as any).core = coreAPI;
 
-  // Auto-load all plugins from the plugins directory
-  loadAllPlugins();
+  // Plugins are now loaded directly via imports in plugin-loader.ts
+  // No need to dynamically load them here
 
   alt.log('~lg~[CORE]~w~ Plugin manager initialized');
 }
@@ -196,10 +196,16 @@ function loadPlugin(pluginName: string): void {
       // Log the file URL for debugging
       alt.log(`~lb~[CORE]~w~ Loading plugin from: ${fileUrl}`);
 
-      // We can't use dynamic import here because it's async
-      // Instead, we'll just log that the plugin was found and assume it will be loaded
-      // The plugin will need to register itself when it's loaded
-      alt.log(`~lg~[CORE]~w~ Plugin ${pluginName} found successfully`);
+      // Actually import the plugin file
+      // This is a synchronous require in Node.js
+      try {
+        require(indexFile);
+        alt.log(`~lg~[CORE]~w~ Plugin ${pluginName} loaded successfully`);
+      } catch (importError) {
+        alt.logError(
+          `[CORE] Error requiring plugin ${pluginName}: ${importError}`
+        );
+      }
     } catch (error) {
       alt.logError(`[CORE] Error importing plugin ${pluginName}: ${error}`);
     }

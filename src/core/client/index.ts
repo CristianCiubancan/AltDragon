@@ -4,6 +4,7 @@
  */
 
 import * as alt from 'alt-client';
+import { initPluginLoader } from './plugin-loader.js';
 
 // Core resource metadata
 const CORE_VERSION = '1.0.0';
@@ -16,6 +17,7 @@ const eventHandlers = new Map<string, Array<(...args: any[]) => void>>();
  * This is called when the resource starts
  */
 function initCore(): void {
+  alt.log('~lb~=================================~w~');
   alt.log(
     '~lb~[CORE:CLIENT]~w~ Initializing client-side core resource v' +
       CORE_VERSION
@@ -27,9 +29,13 @@ function initCore(): void {
   // Create the client-side core API
   createClientAPI();
 
+  // Initialize the plugin loader
+  initPluginLoader();
+
   alt.log(
     '~lg~[CORE:CLIENT]~w~ Client-side core resource initialized successfully'
   );
+  alt.log('~lb~=================================~w~');
 }
 
 /**

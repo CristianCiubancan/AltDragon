@@ -1,0 +1,9 @@
+type = "js"
+main = "server/index.js"
+client-main = "client/index.js"
+client-files = ["client/*"]
+deps = ["core"]
+name = "example-html"
+version = "1.0.0"
+description = "Example plugin with HTML UI"
+author = "AltDragon"

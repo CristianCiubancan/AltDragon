@@ -53,11 +53,27 @@ function registerEventHandlers(): void {
  * Register key bindings for the plugin
  */
 function registerKeyBindings(): void {
-  // Register a key binding to toggle the UI (F2 key)
+  // Track key states
+  let shiftPressed = false;
+
+  // Register key down event
+  alt.on('keydown', (key: number) => {
+    // Key code 16 is Shift
+    if (key === 16) {
+      shiftPressed = true;
+    }
+  });
+
+  // Register key up event
   alt.on('keyup', (key: number) => {
-    // Key code 113 is F2
-    if (key === 113) {
+    // Key code 50 is 2
+    if (key === 50 && shiftPressed) {
       toggleUI();
+    }
+
+    // Key code 16 is Shift
+    if (key === 16) {
+      shiftPressed = false;
     }
 
     // F3 key (114) to heal

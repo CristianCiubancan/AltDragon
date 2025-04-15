@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <!-- Remove viewport meta to prevent resizing -->
-    <title>Example UI</title>
+    <title>Mount Chiliad UI</title>
     <style>
       html,
       body {
@@ -12,56 +12,81 @@
         margin: 0;
         padding: 0;
         overflow: hidden;
-        font-family: Arial, sans-serif;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         color: white;
         background-color: transparent;
       }
 
       .container {
         position: fixed;
-        top: 20px;
-        right: 20px;
-        background-color: rgba(0, 0, 0, 0.7);
-        padding: 15px;
-        border-radius: 5px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        width: 300px; /* Fixed width */
-        height: auto; /* Fixed content height */
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.8);
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+        width: 400px;
+        text-align: center;
+        border: 1px solid #3498db;
       }
 
       .title {
-        font-size: 18px;
+        font-size: 24px;
         font-weight: bold;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
+        color: #3498db;
+        text-transform: uppercase;
+        letter-spacing: 2px;
       }
 
       .content {
-        font-size: 14px;
+        font-size: 16px;
+        line-height: 1.5;
+        margin-bottom: 20px;
+      }
+
+      .location {
+        font-size: 18px;
+        color: #f39c12;
+        margin-bottom: 15px;
+        font-weight: bold;
+      }
+
+      .player-info {
+        background-color: rgba(52, 152, 219, 0.2);
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
       }
 
       button {
-        background-color: #4caf50;
+        background-color: #3498db;
         color: white;
         border: none;
-        padding: 8px 12px;
+        padding: 10px 20px;
         margin-top: 10px;
-        border-radius: 3px;
+        border-radius: 5px;
         cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
       }
 
       button:hover {
-        background-color: #45a049;
+        background-color: #2980b9;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="title">Example TypeScript UI</div>
+      <div class="title">Mount Chiliad Summit</div>
+      <div class="location">Elevation: 797.9m</div>
       <div class="content">
-        <p>Welcome to the example TypeScript plugin!</p>
-        <p id="player-info">Loading player info...</p>
+        <div class="player-info" id="player-info">Loading player info...</div>
+        <p>Welcome to the highest point in Los Santos!</p>
+        <p>Enjoy the breathtaking view of San Andreas.</p>
       </div>
-      <button id="close-btn">Close</button>
+      <button id="close-btn">Close Window</button>
     </div>
 
     <script>

@@ -22,6 +22,7 @@ const metadata: PluginMetadata = {
   description:
     'An example plugin that demonstrates how to use the core resource',
   dependencies: ['core'],
+  supportsHotReload: true,
 };
 
 // Plugin lifecycle hooks
@@ -99,22 +100,12 @@ function handlePlayerDisconnect(player: alt.Player, reason: string): void {
 }
 
 /**
- * Spawn a player at a random location
+ * Spawn a player at a specific location
  * @param player The player to spawn
  */
 function spawnPlayer(player: alt.Player): void {
-  // Spawn positions - variety of nice locations
-  const spawnPositions = [
-    { x: -1042.4601, y: -2745.4338, z: 21.3594 }, // Airport
-    { x: 80.4588, y: -1966.2541, z: 21.0369 }, // Grove Street
-    { x: -74.9482, y: -818.4858, z: 326.1745 }, // Maze Bank Tower top
-    { x: -1377.626, y: -2848.8601, z: 13.9455 }, // Beach
-    { x: 190.5618, y: -934.0596, z: 30.6866 }, // Legion Square
-  ];
-
-  // Select a random spawn position
-  const spawnPos =
-    spawnPositions[Math.floor(Math.random() * spawnPositions.length)];
+  // Fixed spawn position - Mount Chiliad
+  const spawnPos = { x: 501.9261, y: 5604.3647, z: 797.9105 }; // Mount Chiliad peak
 
   try {
     // Set player model
@@ -133,10 +124,10 @@ function spawnPlayer(player: alt.Player): void {
 
           sendNotification(
             player,
-            `Welcome to the server, ${player.name}! Press F2 or type /ui to toggle the UI`
+            `Welcome to the server, ${player.name}! Press Shift+2 to toggle the UI`
           );
           core.log(
-            `Player ${player.name} spawned at ${spawnPos.x}, ${spawnPos.y}, ${spawnPos.z}`
+            `Player ${player.name} spawned at Mount Chiliad (${spawnPos.x}, ${spawnPos.y}, ${spawnPos.z})`
           );
         }, 1000);
       } catch (error) {
